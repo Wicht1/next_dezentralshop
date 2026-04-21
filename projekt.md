@@ -228,9 +228,9 @@ Hersteller können Schweizer Kunden direkt auf ihre Marken-Landingpage schicken.
 
 ### Phase 1 – Fundament (Wochen 1–4)
 - [ ] WooCommerce REST API Keys erstellen
-- [ ] GitHub Repo `dezentralshop-frontend` erstellen
+- [x] GitHub Repo erstellen → [Wicht1/next_dezentralshop](https://github.com/Wicht1/next_dezentralshop)
 - [ ] Next.js Projekt initialisieren (TypeScript, Tailwind, App Router, next-intl)
-- [ ] Vercel verbinden, Subdomain next.dezentralshop.ch einrichten
+- [x] Vercel mit GitHub Repo verbinden, Subdomain next.dezentralshop.ch einrichten
 - [ ] Erste API-Verbindung: Produkte laden und anzeigen
 - [ ] Basisstruktur Mehrsprachigkeit (DE zuerst, Struktur für FR/EN/IT)
 
@@ -293,4 +293,4 @@ Hersteller können Schweizer Kunden direkt auf ihre Marken-Landingpage schicken.
 ---
 
 *Letzte Aktualisierung: April 2026*  
-*Nächster Schritt: WooCommerce REST API Keys erstellen → GitHub Repo anlegen → Next.js initialisieren*
+*Nächster Schritt: WooCommerce REST API Keys erstellen → Next.js initialisieren*
