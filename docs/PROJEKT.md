@@ -285,15 +285,16 @@ Hersteller können Schweizer Kunden direkt auf ihre Marken-Landingpage schicken.
 |---|---|
 | Live Shop | https://dezentralshop.ch |
 | WooCommerce Admin | https://dezentralshop.ch/wp-admin |
-| GitHub (geplant) | https://github.com/[org]/dezentralshop-frontend |
+| GitHub | https://github.com/Wicht1/next_dezentralshop |
 | Vercel (geplant) | next.dezentralshop.ch |
 | Design Referenz | https://transa.ch |
 | Bitcoin Association Feed | https://www.bitcoinassociation.ch/shop |
+| Terminbuchung | https://cal.com |
 
 ---
 
 *Letzte Aktualisierung: April 2026*  
-*Nächster Schritt: WooCommerce REST API Keys erstellen → Next.js initialisieren*
+*Nächster Schritt: WooCommerce REST API Keys erstellen → Next.js initialisieren → Vercel verbinden*
 
 ---
 
@@ -334,3 +335,38 @@ Hersteller können Schweizer Kunden direkt auf ihre Marken-Landingpage schicken.
 - Ergänzen: Welche Dienste selbst gehostet vs. zentral
 - Format: BTCPay: selbst gehostet ✅ / Vercel: zentral ⚠️
 - Statement: Pragmatisch ehrlich, nicht perfekt
+
+### After-Sales E-Mail Sequenz (produktspezifisch)
+- Bestellbestätigung
+- Bestellung zugestellt
+- Follow-up Tag 1: Einrichtungshilfe (produktspezifisch)
+  - Bitaxe: BTC Adresse einrichten, Privacy, richtig einrichten, Video
+  - Coldcard: Seed Phrase, Air-gap, Setup-Video
+- Follow-up 6 Monate: Wartung & Check-in
+  - Bitaxe: Reinigen, Warten, läuft alles?
+- Tool: MailerLite oder WooCommerce Automations
+- Wichtig: Nicht generisch – jedes Produkt hat eigene Sequenz
+
+### Nostr Integration
+- Neue Produkte und Blogposts automatisch auf Nostr posten
+- Nostr Shop (dezentraler Verkauf direkt über Nostr, Lightning Payment)
+- Zielgruppe ist genau dort aktiv
+
+### Onion Shop (Phase 5+)
+- Gehostet auf StartOS Node (selbst gehostet)
+- Bitcoin-only, kein Tracking, kein JavaScript
+- Terminal-Ästhetik (90er Style, reines HTML)
+- Tor Hidden Service (.onion Adresse)
+- Statement: So dezentral wie möglich
+
+### Limitierte Editionen (Scarcity)
+- Dezenter Lagerbestand-Zähler auf Produktseite ("noch 7 von 21 verfügbar")
+- Keine Countdown-Timer, kein FOMO-Marketing
+- Subtil auf der Homepage für aktuelle limitierte Editionen
+- Betrifft vor allem eigene Bitaxe Editionen
+
+### Community Kanäle
+- Nostr (primär)
+- Telegram
+- E-Mail
+- Verlinkung im Footer und auf /status Seite
