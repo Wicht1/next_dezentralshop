@@ -294,3 +294,43 @@ Hersteller können Schweizer Kunden direkt auf ihre Marken-Landingpage schicken.
 
 *Letzte Aktualisierung: April 2026*  
 *Nächster Schritt: WooCommerce REST API Keys erstellen → Next.js initialisieren*
+
+---
+
+## 16. Philosophie & Community Features
+
+### Open Source Statement
+- Der Shop selbst ist open source auf GitHub
+- Passt zur Markenphilosophie: "Wir verkaufen was wir leben"
+- Sichtbar machen: Link zum GitHub Repo im Footer
+
+### Hodl Reserve (Proof of Reserves)
+- Öffentliche Seite: dezentralshop.ch/reserves
+- Zeigt BTC-Bestand in Echtzeit, on-chain verifizierbar
+- Kein Vertrauen nötig – typisch Bitcoin
+
+### Verifizierte Community-Empfehlungen
+- Nicht anonyme Sterne-Bewertungen
+- Kuratierte Empfehlungen von bekannten Personen aus der Bitcoin-Community
+- Ergänzt die bestehende "Empfehlung des Monats" von Lex & Jonathan
+
+### Content-Commerce Produktseiten
+- Struktur: Bild / Kurztext → Preis → Lange Beschreibung + Ressourcen
+- Ressourcen pro Produkt: YouTube-Videos, Blogposts, Anleitungen
+- Alles verknüpft in WooCommerce, Next.js zieht es automatisch
+
+### "Beratung buchen" auf Produktseiten
+- Prominent neben "In den Warenkorb" auf erklärungsbedürftigen Produkten
+- Nicht nur in der Navigation versteckt
+- Direktlink zum bestehenden Termin-Tool
+
+### Eigene Produkte (Bitaxe Editionen)
+- Dezentes "Made by Dezentralshop" Badge
+- Leicht anderer Rahmen auf Produktkarte
+- Betrifft nur die eigenen Bitaxe Editionen
+
+### Transparenz-Seite (/status)
+- Bereits vorhanden: dezentralshop.ch/status (Node etc.)
+- Ergänzen: Welche Dienste selbst gehostet vs. zentral
+- Format: BTCPay: selbst gehostet ✅ / Vercel: zentral ⚠️
+- Statement: Pragmatisch ehrlich, nicht perfekt
