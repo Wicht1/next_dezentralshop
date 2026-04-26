@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "shop": "Negozio",
+    "marken": "Marchi",
+    "blog": "Blog",
+    "beratung": "Prenota una consulenza",
+    "warenkorb": "Carrello",
+    "suche": "Cerca"
+  },
+  "home": {
+    "headline": "Prodotti Bitcoin della massima qualità",
+    "subline": "10% di sconto pagando con Bitcoin.",
+    "cta": "Vai al negozio"
+  },
+  "shop": {
+    "title": "Negozio",
+    "description": "Tutti i prodotti Bitcoin in un colpo d'occhio.",
+    "filter": "Filtri",
+    "addToCart": "Aggiungi al carrello",
+    "outOfStock": "Non disponibile"
+  },
+  "cart": {
+    "title": "Carrello",
+    "empty": "Il tuo carrello è vuoto.",
+    "subtotal": "Subtotale",
+    "discount": "Sconto Bitcoin (10%)",
+    "total": "Totale",
+    "checkout": "Vai alla cassa"
+  },
+  "checkout": {
+    "title": "Cassa",
+    "address": "Indirizzo di consegna",
+    "payment": "Pagamento",
+    "bitcoin": "Bitcoin",
+    "bitcoinDiscount": "10% di sconto",
+    "card": "Carta di credito / debito",
+    "twint": "TWINT",
+    "submit": "Ordina"
+  },
+  "thankyou": {
+    "title": "Grazie per il tuo ordine!",
+    "orderNumber": "Numero d'ordine",
+    "continueShop": "Continua lo shopping"
+  }
+}

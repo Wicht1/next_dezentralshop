@@ -1,0 +1,45 @@
+{
+  "nav": {
+    "shop": "Shop",
+    "marken": "Brands",
+    "blog": "Blog",
+    "beratung": "Book a consultation",
+    "warenkorb": "Cart",
+    "suche": "Search"
+  },
+  "home": {
+    "headline": "Bitcoin products of the highest quality",
+    "subline": "10% discount when paying with Bitcoin.",
+    "cta": "Go to shop"
+  },
+  "shop": {
+    "title": "Shop",
+    "description": "All Bitcoin products at a glance.",
+    "filter": "Filter",
+    "addToCart": "Add to cart",
+    "outOfStock": "Out of stock"
+  },
+  "cart": {
+    "title": "Cart",
+    "empty": "Your cart is empty.",
+    "subtotal": "Subtotal",
+    "discount": "Bitcoin discount (10%)",
+    "total": "Total",
+    "checkout": "Checkout"
+  },
+  "checkout": {
+    "title": "Checkout",
+    "address": "Shipping address",
+    "payment": "Payment",
+    "bitcoin": "Bitcoin",
+    "bitcoinDiscount": "10% discount",
+    "card": "Credit / Debit card",
+    "twint": "TWINT",
+    "submit": "Place order"
+  },
+  "thankyou": {
+    "title": "Thank you for your order!",
+    "orderNumber": "Order number",
+    "continueShop": "Continue shopping"
+  }
+}

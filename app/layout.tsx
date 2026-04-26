@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const geist = Geist({
@@ -17,18 +18,18 @@ export const metadata: Metadata = {
       "Hardware Wallets, Mining, Bücher & mehr. 10% Rabatt bei Zahlung mit Bitcoin.",
     url: "https://dezentralshop.ch",
     siteName: "Dezentralshop",
-    locale: "de_CH",
     type: "website",
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
+  const locale = (await headers()).get("x-locale") ?? "de";
   return (
-    <html lang="de" className={`${geist.variable} h-full antialiased`}>
+    <html lang={locale} className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
