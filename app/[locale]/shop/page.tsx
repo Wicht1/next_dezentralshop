@@ -19,24 +19,6 @@ function ImagePlaceholder({ label, ratio = "1/1", dark = false }: { label: strin
   );
 }
 
-function CB({ label, n, checked }: { label: string; n: number; checked?: boolean }) {
-  return (
-    <label className="flex items-center gap-2.5 py-1.5 cursor-pointer">
-      <span
-        className="inline-block shrink-0"
-        style={{ width: 14, height: 14, border: `1px solid ${checked ? "#0a0a0a" : "#e7e4df"}`, background: checked ? "#0a0a0a" : "transparent", position: "relative" }}
-      >
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ position: "absolute", top: 1, left: 1 }}>
-            <path d="M1 5l3 3 5-6" stroke="#f39320" strokeWidth="1.5" />
-          </svg>
-        )}
-      </span>
-      <span style={{ fontSize: 13, color: "#0a0a0a", flex: 1 }}>{label}</span>
-      <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>{n}</span>
-    </label>
-  );
-}
 
 function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -82,7 +64,11 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
 
             <FilterGroup title="Kategorie">
               {categories.slice(0, 8).map((cat) => (
-                <CB key={cat.id} label={cat.name} n={cat.count} />
+                <Link key={cat.id} href={`/${locale}/kategorie/${cat.slug}`} className="flex items-center gap-2.5 py-1.5">
+                  <span className="inline-block shrink-0" style={{ width: 14, height: 14, border: "1px solid #e7e4df", background: "transparent" }} />
+                  <span style={{ fontSize: 13, color: "#0a0a0a", flex: 1 }}>{cat.name}</span>
+                  <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>{cat.count}</span>
+                </Link>
               ))}
             </FilterGroup>
 
