@@ -1,7 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { getCategoryBySlug, getProducts, getCategories, getGlobalAttributes, parsePrice } from "@/lib/woocommerce";
+import { getCategoryBySlug, getProducts, getCategories, parsePrice } from "@/lib/woocommerce";
 import Pill from "@/components/ui/Pill";
 import PriceBlock from "@/components/ui/PriceBlock";
 import LimitedCounter from "@/components/ui/LimitedCounter";
@@ -16,14 +16,10 @@ export default async function KategoriePage(
 
   const activeFilter = typeof searchParams.filter === "string" ? searchParams.filter : null;
 
-  const [category, allCategories, globalAttributes] = await Promise.all([
+  const [category, allCategories] = await Promise.all([
     getCategoryBySlug(slug),
     getCategories(),
-    getGlobalAttributes(),
   ]);
-
-  // id → slug map so we can match fil_ attributes from product data
-  const attrSlugById = new Map(globalAttributes.map((a) => [a.id, a.slug]));
 
   if (!category) notFound();
 
@@ -47,12 +43,12 @@ export default async function KategoriePage(
   // Row 2: sub-categories of the active parent + fil_ filters
   const subCats = allCategories.filter((c) => c.parent === activeParentId);
 
-  // Only fil_ attributes as filters — look up slug via global attribute id
+  // Filter attributes: everything except var_* (detected by name prefix)
+  // var_ attributes are named "var_language", "Var_color", "var_size" etc.
   const filterOptions = new Set<string>();
   for (const p of allProducts) {
     for (const attr of p.attributes) {
-      const attrSlug = attrSlugById.get(attr.id) ?? "";
-      if (attrSlug.startsWith("fil_")) {
+      if (!attr.name.toLowerCase().startsWith("var")) {
         for (const opt of attr.options) filterOptions.add(opt);
       }
     }
