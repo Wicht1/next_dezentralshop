@@ -135,6 +135,18 @@ export async function getCategoryBySlug(slug: string): Promise<WCProductCategory
   return cats[0] ?? null;
 }
 
+// ─── Attributes ───────────────────────────────────────────────────────────────
+
+export type WCGlobalAttribute = {
+  id: number;
+  name: string;
+  slug: string;
+};
+
+export async function getGlobalAttributes(): Promise<WCGlobalAttribute[]> {
+  return wcFetch<WCGlobalAttribute[]>("/products/attributes", { per_page: 100 });
+}
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Format CHF price string → number */
