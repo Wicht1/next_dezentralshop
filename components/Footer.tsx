@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { getBitcoinNetworkSummary } from "@/lib/status";
-import LimitedCounter from "@/components/ui/LimitedCounter";
 
 const COLS = [
   {
@@ -75,11 +74,16 @@ export default async function Footer({ locale }: { locale: string }) {
             {bitcoinNetwork?.halving.remainingDays ?? "-"} Tage
           </div>
           {bitcoinNetwork?.halving && (
-            <div className="mt-3">
-              <LimitedCounter
-                left={bitcoinNetwork.halving.remainingBlocks}
-                total={210000}
-                progressPercent={bitcoinNetwork.halving.progressPercent}
+            <div className="mt-3 w-full" style={{ height: 2, background: "#e7e4df", position: "relative" }}>
+              <div
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  height: "100%",
+                  width: `${Math.min(100, Math.max(0, bitcoinNetwork.halving.progressPercent))}%`,
+                  background: "#f39320",
+                }}
               />
             </div>
           )}
