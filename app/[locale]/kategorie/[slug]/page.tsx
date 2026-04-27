@@ -9,7 +9,12 @@ import LimitedCounter from "@/components/ui/LimitedCounter";
 export default async function KategoriePage(
   props: PageProps<"/[locale]/kategorie/[slug]">
 ) {
-  const { locale, slug } = await props.params;
+  const [{ locale, slug }, searchParams] = await Promise.all([
+    props.params,
+    props.searchParams,
+  ]);
+
+  const activeFilter = typeof searchParams.filter === "string" ? searchParams.filter : null;
 
   const [category, allCategories] = await Promise.all([
     getCategoryBySlug(slug),
@@ -18,21 +23,29 @@ export default async function KategoriePage(
 
   if (!category) notFound();
 
-  const products = await getProducts({
+  const allProducts = await getProducts({
     category: String(category.id),
     per_page: 24,
   });
 
-  const siblingCategories = allCategories.filter((c) => c.id !== category.id);
-
-  // Collect unique attribute options across all products in this category
+  // Collect unique attribute options across ALL products (before filtering)
   const attributeMap = new Map<string, Set<string>>();
-  for (const p of products) {
+  for (const p of allProducts) {
     for (const attr of p.attributes) {
       if (!attributeMap.has(attr.name)) attributeMap.set(attr.name, new Set());
       for (const opt of attr.options) attributeMap.get(attr.name)!.add(opt);
     }
   }
+
+  const products = activeFilter
+    ? allProducts.filter((p) =>
+        p.attributes.some((a) => a.options.some((o) => o === activeFilter))
+      )
+    : allProducts;
+
+  const siblingCategories = allCategories.filter((c) => c.id !== category.id);
+
+  const baseUrl = `/${locale}/kategorie/${slug}`;
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
@@ -47,7 +60,9 @@ export default async function KategoriePage(
           <h1 className="tracking-tight" style={{ fontSize: "clamp(36px,5vw,56px)", letterSpacing: "-0.025em", fontWeight: 500, lineHeight: 1 }}>
             {category.name}.
           </h1>
-          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>{products.length} Produkte</div>
+          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>
+            {products.length}{activeFilter ? ` von ${allProducts.length}` : ""} Produkte
+          </div>
         </div>
         {category.description && (
           <p className="mt-4 max-w-xl" style={{ fontSize: 15, color: "#373939", lineHeight: 1.6 }}
@@ -69,15 +84,38 @@ export default async function KategoriePage(
           </div>
         )}
 
-        {/* Row 2: Attribute pills from products in this category */}
+        {/* Row 2: Attribute filter pills */}
         {attributeMap.size > 0 && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
-            {Array.from(attributeMap.entries()).map(([attrName, options]) =>
-              Array.from(options).map((opt) => (
-                <span key={`${attrName}-${opt}`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
-                  {opt}
-                </span>
-              ))
+            {activeFilter && (
+              <Link
+                href={baseUrl}
+                className="font-mono uppercase px-3 py-1.5"
+                style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}
+              >
+                Alle
+              </Link>
+            )}
+            {Array.from(attributeMap.entries()).map(([, options]) =>
+              Array.from(options).map((opt) => {
+                const isActive = activeFilter === opt;
+                return (
+                  <Link
+                    key={opt}
+                    href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`}
+                    className="font-mono uppercase px-3 py-1.5"
+                    style={{
+                      fontSize: 10,
+                      letterSpacing: "0.14em",
+                      background: isActive ? "#0a0a0a" : "transparent",
+                      color: isActive ? "#fafafa" : "#373939",
+                      border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df",
+                    }}
+                  >
+                    {opt}
+                  </Link>
+                );
+              })
             )}
           </div>
         )}
