@@ -1,55 +1,56 @@
 import Pill from "@/components/ui/Pill";
 import PriceBlock from "@/components/ui/PriceBlock";
-import HouseBadge from "@/components/ui/HouseBadge";
 import LimitedCounter from "@/components/ui/LimitedCounter";
 import Link from "next/link";
 import Image from "next/image";
 import { getProducts, getCategories, parsePrice } from "@/lib/woocommerce";
+import FilterSidebarContent, { buildToggleUrl } from "@/components/FilterSidebarContent";
+import FilterDrawer from "@/components/FilterDrawer";
 
-function ImagePlaceholder({ label, ratio = "1/1", dark = false }: { label: string; ratio?: string; dark?: boolean }) {
-  const bg = dark ? "#0a0a0a" : "#f4f2ee";
-  const stripe = dark ? "#121212" : "#ece8e1";
-  const fg = dark ? "#5a5a5a" : "#9c9689";
-  return (
-    <div className="relative overflow-hidden w-full" style={{ aspectRatio: ratio, background: `repeating-linear-gradient(135deg, ${bg} 0 14px, ${stripe} 14px 15px)` }}>
-      <div className="absolute inset-0 flex items-end justify-start p-3">
-        <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.12em", color: fg }}>{label}</span>
-      </div>
-    </div>
-  );
-}
-
-
-function CB({ label, n, checked }: { label: string; n: number; checked?: boolean }) {
-  return (
-    <div className="flex items-center gap-2.5 py-1.5">
-      <span className="inline-block shrink-0" style={{ width: 14, height: 14, border: `1px solid ${checked ? "#0a0a0a" : "#e7e4df"}`, background: checked ? "#0a0a0a" : "transparent", position: "relative" }}>
-        {checked && (
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ position: "absolute", top: 1, left: 1 }}>
-            <path d="M1 5l3 3 5-6" stroke="#f39320" strokeWidth="1.5" />
-          </svg>
-        )}
-      </span>
-      <span style={{ fontSize: 13, color: "#0a0a0a", flex: 1 }}>{label}</span>
-      <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>{n}</span>
-    </div>
-  );
-}
-
-function FilterGroup({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ borderTop: "1px solid #e7e4df" }} className="py-5">
-      <div className="font-mono uppercase mb-4" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#0a0a0a" }}>
-        {title}
-      </div>
-      {children}
-    </div>
-  );
-}
+const decode = (s: string) =>
+  s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#039;/g, "'");
 
 export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
-  const { locale } = await props.params;
-  const [products, categories] = await Promise.all([getProducts({ per_page: 24 }), getCategories()]);
+  const [{ locale }, searchParams] = await Promise.all([props.params, props.searchParams]);
+
+  const raw = searchParams.filter;
+  const activeFilters: string[] = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+
+  const [allProducts, allCategories] = await Promise.all([
+    getProducts({ per_page: 96 }),
+    getCategories(),
+  ]);
+
+  const topLevelCategories = allCategories.filter((c) => c.parent === 0);
+
+  // Build filter groups from all fetched products
+  const filterGroupMap = new Map<string, Set<string>>();
+  for (const p of allProducts) {
+    for (const attr of p.attributes) {
+      if (attr.name.toLowerCase().startsWith("var")) continue;
+      const label = attr.name.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      if (!filterGroupMap.has(label)) filterGroupMap.set(label, new Set());
+      for (const opt of attr.options) filterGroupMap.get(label)!.add(decode(opt));
+    }
+  }
+  const filterGroups = Array.from(filterGroupMap.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "de"))
+    .map(([label, opts]) => ({
+      label,
+      options: Array.from(opts).sort((a, b) => a.localeCompare(b, "de")),
+    }));
+
+  // AND logic: product must match all active filters
+  const displayProducts = activeFilters.length > 0
+    ? allProducts.filter((p) => {
+        const allOpts = p.attributes.flatMap((a) => a.options.map(decode));
+        return activeFilters.every((f) => allOpts.includes(f));
+      })
+    : allProducts.slice(0, 24);
+
+  const baseUrl = `/${locale}/shop`;
+
+  const sidebarProps = { categories: topLevelCategories, filterGroups, activeFilters, locale, baseUrl };
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
@@ -62,111 +63,59 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
           <h1 className="tracking-tight" style={{ fontSize: "clamp(36px,5vw,56px)", letterSpacing: "-0.025em", fontWeight: 500, lineHeight: 1 }}>
             Alle Produkte.
           </h1>
-          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>{products.length} Produkte</div>
+          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>
+            {displayProducts.length}{activeFilters.length > 0 ? ` von ${allProducts.length}` : ""} Produkte
+          </div>
         </div>
       </section>
 
-      {/* Body */}
       <section className="max-w-[1280px] mx-auto px-8 grid grid-cols-12 gap-8 pb-24">
-        {/* Filters */}
-        <aside className="col-span-3">
+        {/* Desktop sidebar */}
+        <aside className="hidden lg:block col-span-3">
           <div className="sticky top-32">
-            <div className="flex items-center justify-between pb-4">
-              <div className="font-semibold tracking-tight" style={{ fontSize: 15 }}>Filter</div>
-              <button className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>
-                Alle zurücksetzen
-              </button>
-            </div>
-
-            <FilterGroup title="Kategorie">
-              {categories.slice(0, 8).map((cat) => (
-                <Link key={cat.id} href={`/${locale}/kategorie/${cat.slug}`} className="flex items-center gap-2.5 py-1.5">
-                  <span className="inline-block shrink-0" style={{ width: 14, height: 14, border: "1px solid #e7e4df", background: "transparent" }} />
-                  <span style={{ fontSize: 13, color: "#0a0a0a", flex: 1 }}>{cat.name}</span>
-                  <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>{cat.count}</span>
-                </Link>
-              ))}
-            </FilterGroup>
-
-            <FilterGroup title="Preis">
-              <div className="flex gap-2 mb-3">
-                <div className="flex-1 h-9 flex items-center px-2.5" style={{ border: "1px solid #e7e4df", fontSize: 13 }}>
-                  <span style={{ color: "#373939" }}>CHF</span>
-                  <span className="ml-2 font-mono tabular-nums">0</span>
-                </div>
-                <div className="flex-1 h-9 flex items-center px-2.5" style={{ border: "1px solid #e7e4df", fontSize: 13 }}>
-                  <span style={{ color: "#373939" }}>CHF</span>
-                  <span className="ml-2 font-mono tabular-nums">500</span>
-                </div>
-              </div>
-              <div className="relative h-6 flex items-center">
-                <div style={{ height: 2, background: "#e7e4df", position: "absolute", left: 0, right: 0 }} />
-                <div style={{ height: 2, background: "#0a0a0a", position: "absolute", left: "10%", right: "30%" }} />
-                <div style={{ width: 12, height: 12, background: "#fafafa", border: "1px solid #0a0a0a", position: "absolute", left: "10%", transform: "translateX(-50%)" }} />
-                <div style={{ width: 12, height: 12, background: "#fafafa", border: "1px solid #0a0a0a", position: "absolute", right: "30%", transform: "translateX(50%)" }} />
-              </div>
-            </FilterGroup>
-
-            <FilterGroup title="Eigenschaften">
-              <CB label="Open Source" n={18} checked />
-              <CB label="Air-gapped" n={6} />
-              <CB label="Bitcoin-only" n={9} />
-              <CB label="Touchscreen" n={4} />
-              <CB label="PSBT" n={12} />
-              <CB label="Multisig" n={14} />
-            </FilterGroup>
-
-            <FilterGroup title="Hersteller">
-              <CB label="Coldcard" n={4} />
-              <CB label="BitBox (CH)" n={6} />
-              <CB label="Trezor" n={5} />
-              <CB label="Foundation" n={3} />
-              <CB label="Blockstream" n={2} />
-            </FilterGroup>
-
-            <FilterGroup title="Verfügbarkeit">
-              <CB label="Ab Lager Zürich" n={17} />
-              <CB label="Limitierte Editionen" n={4} />
-            </FilterGroup>
-
-            <div className="mt-6 p-4" style={{ background: "#f4f2ee" }}>
-              <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>Unsicher?</div>
-              <div style={{ fontSize: 14, color: "#0a0a0a", marginTop: 6, lineHeight: 1.4 }}>30 Minuten mit einem Techniker, gratis.</div>
-              <Link href={`/${locale}/beratung`} className="mt-4 h-10 w-full flex items-center px-3" style={{ border: "1px solid #0a0a0a", background: "transparent", fontSize: 13, color: "#0a0a0a" }}>
-                Beratung buchen →
-              </Link>
-            </div>
+            <FilterSidebarContent {...sidebarProps} />
           </div>
         </aside>
 
         {/* Product grid */}
-        <div className="col-span-9">
+        <div className="col-span-12 lg:col-span-9">
           {/* Toolbar */}
-          <div className="flex items-center justify-between pb-5" style={{ borderBottom: "1px solid #0a0a0a" }}>
-            <div className="flex items-center gap-2">
-              {["Open Source", "Air-gapped", "Hardware Wallet"].map((t) => (
-                <span key={t} className="inline-flex items-center gap-2 font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa", padding: "5px 9px" }}>
-                  {t} <span style={{ opacity: 0.6 }}>×</span>
+          <div className="flex items-center justify-between pb-5 flex-wrap gap-3" style={{ borderBottom: "1px solid #0a0a0a" }}>
+            <div className="flex items-center gap-2 flex-wrap">
+              {activeFilters.length > 0 ? (
+                activeFilters.map((f) => (
+                  <Link
+                    key={f}
+                    href={buildToggleUrl(f, activeFilters, baseUrl)}
+                    className="inline-flex items-center gap-2 font-mono uppercase"
+                    style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa", padding: "5px 9px" }}
+                  >
+                    {f} <span style={{ opacity: 0.6 }}>×</span>
+                  </Link>
+                ))
+              ) : (
+                <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>
+                  {allProducts.length} Produkte total
                 </span>
-              ))}
+              )}
             </div>
-            <div className="flex items-center gap-5">
-              <select className="font-mono bg-transparent" style={{ fontSize: 12, color: "#0a0a0a", border: "none", outline: "none" }}>
-                <option>Relevanz</option>
-                <option>Preis aufsteigend</option>
-                <option>Preis absteigend</option>
-                <option>Neu</option>
-              </select>
-            </div>
+            <select
+              className="font-mono bg-transparent"
+              style={{ fontSize: 12, color: "#0a0a0a", border: "none", outline: "none" }}
+            >
+              <option>Relevanz</option>
+              <option>Preis aufsteigend</option>
+              <option>Preis absteigend</option>
+              <option>Neu</option>
+            </select>
           </div>
 
           {/* Product cards */}
-          <div className="grid grid-cols-3 gap-x-6 gap-y-12 pt-8">
-            {products.map((p) => {
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-x-4 lg:gap-x-6 gap-y-10 lg:gap-y-12 pt-8">
+            {displayProducts.map((p) => {
               const price = parsePrice(p.price);
               const img = p.images[0];
               const isLimited = p.manage_stock && p.stock_quantity !== null && p.stock_quantity <= 21;
-              const tags = p.attributes.flatMap((a) => a.options).slice(0, 3);
               return (
                 <Link key={p.id} href={`/${locale}/shop/${p.slug}`}>
                   <div className="relative">
@@ -177,11 +126,15 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
                           alt={img.alt || p.name}
                           fill
                           className="object-contain"
-                          sizes="(max-width: 1280px) 25vw, 300px"
+                          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 25vw, 300px"
                         />
                       </div>
                     ) : (
-                      <ImagePlaceholder label={p.name} ratio="1/1" />
+                      <div className="relative overflow-hidden w-full" style={{ aspectRatio: "1/1", background: "repeating-linear-gradient(135deg, #f4f2ee 0 14px, #ece8e1 14px 15px)" }}>
+                        <div className="absolute inset-0 flex items-end justify-start p-3">
+                          <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.12em", color: "#9c9689" }}>{p.name}</span>
+                        </div>
+                      </div>
                     )}
                     {isLimited && p.stock_quantity !== null && (
                       <div className="absolute top-3 right-3">
@@ -202,11 +155,6 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
                     </span>
                   </div>
                   <div className="mt-3"><PriceBlock chf={price} size="sm" /></div>
-                  {tags.length > 0 && (
-                    <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                      {tags.map((tg) => <Pill key={tg}>{tg}</Pill>)}
-                    </div>
-                  )}
                   {isLimited && p.stock_quantity !== null && (
                     <div className="mt-3"><LimitedCounter left={p.stock_quantity} total={21} /></div>
                   )}
@@ -214,21 +162,11 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
               );
             })}
           </div>
-
-          {/* Pagination */}
-          <div className="mt-16 flex items-center justify-between" style={{ borderTop: "1px solid #e7e4df", paddingTop: 20 }}>
-            <span className="font-mono" style={{ fontSize: 12, color: "#373939" }}>Seite 01 / 03</span>
-            <div className="flex items-center gap-2">
-              {["01", "02", "03"].map((n, i) => (
-                <button key={n} className="w-9 h-9 font-mono tabular-nums" style={{ border: `1px solid ${i === 0 ? "#0a0a0a" : "#e7e4df"}`, background: i === 0 ? "#0a0a0a" : "transparent", color: i === 0 ? "#fafafa" : "#0a0a0a", fontSize: 12 }}>
-                  {n}
-                </button>
-              ))}
-              <button className="h-9 px-4 font-mono" style={{ border: "1px solid #e7e4df", fontSize: 12, color: "#0a0a0a" }}>Weiter →</button>
-            </div>
-          </div>
         </div>
       </section>
+
+      {/* Mobile filter drawer (button + overlay, lg:hidden internally) */}
+      <FilterDrawer {...sidebarProps} />
     </div>
   );
 }
