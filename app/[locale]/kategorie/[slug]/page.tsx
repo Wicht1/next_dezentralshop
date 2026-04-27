@@ -14,7 +14,11 @@ export default async function KategoriePage(
     props.searchParams,
   ]);
 
-  const activeFilter = typeof searchParams.filter === "string" ? searchParams.filter : null;
+  // Support multiple ?filter= params (array or single string)
+  const raw = searchParams.filter;
+  const activeFilters: string[] = raw
+    ? Array.isArray(raw) ? raw : [raw]
+    : [];
 
   const [category, allCategories] = await Promise.all([
     getCategoryBySlug(slug),
@@ -28,20 +32,20 @@ export default async function KategoriePage(
     per_page: 24,
   });
 
-  const products = activeFilter
-    ? allProducts.filter((p) =>
-        p.attributes.some((a) => a.options.some((o) => o === activeFilter))
-      )
+  // AND logic: product must match every selected filter
+  const products = activeFilters.length > 0
+    ? allProducts.filter((p) => {
+        const allOpts = p.attributes.flatMap((a) => a.options);
+        return activeFilters.every((f) => allOpts.includes(f));
+      })
     : allProducts;
 
-  // Row 1: all top-level categories
   const topLevelCats = allCategories.filter((c) => c.parent === 0);
-
-  // Which top-level cat is "active" (current or its parent)
   const activeParentId = category.parent === 0 ? category.id : category.parent;
-
-  // Row 2: sub-categories of the active parent + fil_ filters
   const subCats = allCategories.filter((c) => c.parent === activeParentId);
+
+  // Decode HTML entities from WooCommerce (e.g. &amp; → &)
+  const decode = (s: string) => s.replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&#039;/g, "'");
 
   // Group filter attributes by label (strip parenthetical suffix, exclude var_*)
   const filterGroups = new Map<string, Set<string>>();
@@ -50,7 +54,7 @@ export default async function KategoriePage(
       if (attr.name.toLowerCase().startsWith("var")) continue;
       const label = attr.name.replace(/\s*\([^)]*\)\s*$/, "").trim();
       if (!filterGroups.has(label)) filterGroups.set(label, new Set());
-      for (const opt of attr.options) filterGroups.get(label)!.add(opt);
+      for (const opt of attr.options) filterGroups.get(label)!.add(decode(opt));
     }
   }
   const sortedFilterGroups = Array.from(filterGroups.entries())
@@ -58,6 +62,15 @@ export default async function KategoriePage(
     .map(([label, opts]) => ({ label, options: Array.from(opts).sort((a, b) => a.localeCompare(b, "de")) }));
 
   const baseUrl = `/${locale}/kategorie/${slug}`;
+
+  // Toggle a filter in/out of the active set and return the resulting URL
+  const toggleUrl = (opt: string) => {
+    const next = activeFilters.includes(opt)
+      ? activeFilters.filter((f) => f !== opt)
+      : [...activeFilters, opt];
+    if (next.length === 0) return baseUrl;
+    return `${baseUrl}?${next.map((f) => `filter=${encodeURIComponent(f)}`).join("&")}`;
+  };
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
@@ -73,7 +86,7 @@ export default async function KategoriePage(
             {category.name}.
           </h1>
           <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>
-            {products.length}{activeFilter ? ` von ${allProducts.length}` : ""} Produkte
+            {products.length}{activeFilters.length > 0 ? ` von ${allProducts.length}` : ""} Produkte
           </div>
         </div>
         {category.description && (
@@ -125,10 +138,15 @@ export default async function KategoriePage(
         {/* Row 3+: Grouped filters */}
         {sortedFilterGroups.length > 0 && (
           <div className="mt-4 space-y-2">
-            {activeFilter && (
-              <div className="flex items-center gap-2 mb-1">
+            {activeFilters.length > 0 && (
+              <div className="flex items-center gap-2 mb-1 flex-wrap">
+                {activeFilters.map((f) => (
+                  <Link key={f} href={toggleUrl(f)} className="font-mono uppercase px-2.5 py-1" style={{ fontSize: 9, letterSpacing: "0.12em", background: "#0a0a0a", color: "#fafafa", border: "1px solid #0a0a0a" }}>
+                    × {f}
+                  </Link>
+                ))}
                 <Link href={baseUrl} className="font-mono uppercase" style={{ fontSize: 9, letterSpacing: "0.14em", color: "#9c9689" }}>
-                  × Filter zurücksetzen
+                  Alle zurücksetzen
                 </Link>
               </div>
             )}
@@ -137,9 +155,9 @@ export default async function KategoriePage(
               const visible = options.slice(0, LIMIT);
               const hidden = options.slice(LIMIT);
               const filterPill = (opt: string) => {
-                const isActive = activeFilter === opt;
+                const isActive = activeFilters.includes(opt);
                 return (
-                  <Link key={opt} href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`} className="font-mono uppercase px-2.5 py-1 shrink-0" style={{ fontSize: 9, letterSpacing: "0.12em", background: isActive ? "#0a0a0a" : "transparent", color: isActive ? "#fafafa" : "#373939", border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df" }}>
+                  <Link key={opt} href={toggleUrl(opt)} className="font-mono uppercase px-2.5 py-1 shrink-0" style={{ fontSize: 9, letterSpacing: "0.12em", background: isActive ? "#0a0a0a" : "transparent", color: isActive ? "#fafafa" : "#373939", border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df" }}>
                     {opt}
                   </Link>
                 );
