@@ -33,18 +33,18 @@ export default function Footer({ locale }: { locale: string }) {
         {/* Brand column */}
         <div className="col-span-4">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.svg" alt="" width={28} height={28} />
+            <img src="/logo-original.svg" alt="" width={28} height={28} />
             <div
               className="tracking-tight"
               style={{
                 fontSize: 22,
-                color: "#0a0a0a",
+                color: "#f39320",
                 fontFamily: "var(--font-logo)",
-                fontWeight: 400,
+                fontWeight: 300,
                 letterSpacing: "-0.01em",
               }}
             >
-              <span style={{ fontStyle: "italic", fontWeight: 700 }}>
+              <span style={{ fontWeight: 700 }}>
                 Dezentral
               </span>
               <span>shop.ch</span>

@@ -5,11 +5,11 @@ export default function TopBar({ locale }: { locale: string }) {
   return (
     <div
       className="sticky top-0 z-20"
-      style={{ borderBottom: "1px solid #e7e4df", background: "#fafafa" }}
+      style={{ background: "#0a0a0a" }}
     >
       {/* Announcement strip */}
-      <div style={{ background: "#0a0a0a", color: "#fafafa" }}>
-        <div className="max-w-[1280px] mx-auto px-8 h-8 flex items-center justify-between font-mono text-[11px] tracking-wide">
+      <div style={{ borderBottom: "1px solid #1f1f1f" }}>
+        <div className="max-w-[1280px] mx-auto px-8 h-8 flex items-center justify-between font-mono text-[11px] tracking-wide" style={{ color: "#fafafa" }}>
           <span className="flex items-center gap-2">
             <span
               className="inline-block w-1.5 h-1.5"
@@ -32,7 +32,7 @@ export default function TopBar({ locale }: { locale: string }) {
           {/* Logo */}
           <Link href={`/${locale}`} className="flex items-center gap-2.5">
             <img
-              src="/logo.svg"
+              src="/logo-original.svg"
               alt="Dezentralshop"
               width={34}
               height={34}
@@ -42,13 +42,13 @@ export default function TopBar({ locale }: { locale: string }) {
                 className="tracking-tight"
                 style={{
                   fontSize: 22,
-                  color: "#0a0a0a",
+                  color: "#f39320",
                   letterSpacing: "-0.01em",
                   fontFamily: "var(--font-logo)",
-                  fontWeight: 400,
+                  fontWeight: 300,
                 }}
               >
-                <span style={{ fontStyle: "italic", fontWeight: 700 }}>
+                <span style={{ fontWeight: 700 }}>
                   Dezentral
                 </span>
                 <span>shop</span>
@@ -58,7 +58,7 @@ export default function TopBar({ locale }: { locale: string }) {
                 style={{
                   fontSize: 9,
                   letterSpacing: "0.2em",
-                  color: "#373939",
+                  color: "#6b6b6b",
                 }}
               >
                 Schweiz · seit 2021
@@ -74,7 +74,7 @@ export default function TopBar({ locale }: { locale: string }) {
           <Link
             href={`/${locale}/suche`}
             className="w-10 h-10 flex items-center justify-center"
-            style={{ color: "#0a0a0a" }}
+            style={{ color: "#fafafa" }}
           >
             <svg
               width="18"
@@ -89,13 +89,13 @@ export default function TopBar({ locale }: { locale: string }) {
             </svg>
           </Link>
           <div
-            style={{ width: 1, height: 20, background: "#e7e4df" }}
+            style={{ width: 1, height: 20, background: "#2a2a2a" }}
             className="mx-2"
           />
           <Link
             href={`/${locale}/warenkorb`}
             className="flex items-center gap-2 h-10 px-3"
-            style={{ fontSize: 13, color: "#0a0a0a" }}
+            style={{ fontSize: 13, color: "#fafafa" }}
           >
             <svg
               width="18"

@@ -25,7 +25,7 @@ export default function NavItems({ locale }: { locale: string }) {
             className="relative py-1"
             style={{
               fontSize: 14,
-              color: isActive ? "#0a0a0a" : "#373939",
+              color: isActive ? "#fafafa" : "#8a8a8a",
               fontWeight: isActive ? 500 : 400,
             }}
           >
@@ -33,7 +33,7 @@ export default function NavItems({ locale }: { locale: string }) {
             {isActive && (
               <span
                 className="absolute -bottom-[29px] left-0 right-0 h-[2px]"
-                style={{ background: "#0a0a0a" }}
+                style={{ background: "#f39320" }}
               />
             )}
           </Link>
