@@ -43,16 +43,19 @@ export default async function KategoriePage(
   // Row 2: sub-categories of the active parent + fil_ filters
   const subCats = allCategories.filter((c) => c.parent === activeParentId);
 
-  // Filter attributes: everything except var_* (detected by name prefix)
-  // var_ attributes are named "var_language", "Var_color", "var_size" etc.
-  const filterOptions = new Set<string>();
+  // Group filter attributes by label (strip parenthetical suffix, exclude var_*)
+  const filterGroups = new Map<string, Set<string>>();
   for (const p of allProducts) {
     for (const attr of p.attributes) {
-      if (!attr.name.toLowerCase().startsWith("var")) {
-        for (const opt of attr.options) filterOptions.add(opt);
-      }
+      if (attr.name.toLowerCase().startsWith("var")) continue;
+      const label = attr.name.replace(/\s*\([^)]*\)\s*$/, "").trim();
+      if (!filterGroups.has(label)) filterGroups.set(label, new Set());
+      for (const opt of attr.options) filterGroups.get(label)!.add(opt);
     }
   }
+  const sortedFilterGroups = Array.from(filterGroups.entries())
+    .sort(([a], [b]) => a.localeCompare(b, "de"))
+    .map(([label, opts]) => ({ label, options: Array.from(opts).sort((a, b) => a.localeCompare(b, "de")) }));
 
   const baseUrl = `/${locale}/kategorie/${slug}`;
 
@@ -105,57 +108,62 @@ export default async function KategoriePage(
           })}
         </div>
 
-        {/* Row 2: Sub-categories (black) + fil_ filters (light) */}
-        {(subCats.length > 0 || filterOptions.size > 0) && (
+        {/* Row 2: Sub-categories */}
+        {subCats.length > 0 && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             {subCats.map((sub) => {
               const isActive = category.id === sub.id;
               return (
-                <Link
-                  key={sub.id}
-                  href={`/${locale}/kategorie/${sub.slug}`}
-                  className="font-mono uppercase px-3 py-1.5"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    background: isActive ? "transparent" : "#0a0a0a",
-                    color: isActive ? "#f39320" : "#fafafa",
-                    border: isActive ? "1px solid #f39320" : "1px solid #0a0a0a",
-                  }}
-                >
+                <Link key={sub.id} href={`/${locale}/kategorie/${sub.slug}`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", background: isActive ? "transparent" : "#0a0a0a", color: isActive ? "#f39320" : "#fafafa", border: isActive ? "1px solid #f39320" : "1px solid #0a0a0a" }}>
                   {sub.name}
                 </Link>
               );
             })}
-            {subCats.length > 0 && filterOptions.size > 0 && (
-              <div style={{ width: 1, height: 16, background: "#e7e4df", margin: "0 4px", flexShrink: 0 }} />
-            )}
+          </div>
+        )}
+
+        {/* Row 3+: Grouped filters */}
+        {sortedFilterGroups.length > 0 && (
+          <div className="mt-4 space-y-2">
             {activeFilter && (
-              <Link
-                href={baseUrl}
-                className="font-mono uppercase px-3 py-1.5"
-                style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}
-              >
-                ×
-              </Link>
-            )}
-            {Array.from(filterOptions).map((opt) => {
-              const isActive = activeFilter === opt;
-              return (
-                <Link
-                  key={opt}
-                  href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`}
-                  className="font-mono uppercase px-3 py-1.5"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    background: isActive ? "#0a0a0a" : "transparent",
-                    color: isActive ? "#fafafa" : "#373939",
-                    border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df",
-                  }}
-                >
-                  {opt}
+              <div className="flex items-center gap-2 mb-1">
+                <Link href={baseUrl} className="font-mono uppercase" style={{ fontSize: 9, letterSpacing: "0.14em", color: "#9c9689" }}>
+                  × Filter zurücksetzen
                 </Link>
+              </div>
+            )}
+            {sortedFilterGroups.map(({ label, options }) => {
+              const LIMIT = 5;
+              const visible = options.slice(0, LIMIT);
+              const hidden = options.slice(LIMIT);
+              const filterPill = (opt: string) => {
+                const isActive = activeFilter === opt;
+                return (
+                  <Link key={opt} href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`} className="font-mono uppercase px-2.5 py-1 shrink-0" style={{ fontSize: 9, letterSpacing: "0.12em", background: isActive ? "#0a0a0a" : "transparent", color: isActive ? "#fafafa" : "#373939", border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df" }}>
+                    {opt}
+                  </Link>
+                );
+              };
+              return (
+                <div key={label} className="flex items-start gap-3">
+                  <span className="font-mono uppercase shrink-0" style={{ fontSize: 9, letterSpacing: "0.18em", color: "#9c9689", paddingTop: 5, minWidth: 88 }}>
+                    {label}
+                  </span>
+                  <div style={{ width: 1, background: "#e7e4df", alignSelf: "stretch", flexShrink: 0 }} />
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    {visible.map(filterPill)}
+                    {hidden.length > 0 && (
+                      <details>
+                        <summary className="font-mono uppercase cursor-pointer" style={{ listStyleType: "none", fontSize: 9, letterSpacing: "0.14em", color: "#9c9689", padding: "4px 8px" }}>
+                          +{hidden.length}
+                        </summary>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                          {hidden.map(filterPill)}
+                        </div>
+                      </details>
+                    )}
+                  </div>
+                </div>
               );
             })}
           </div>
