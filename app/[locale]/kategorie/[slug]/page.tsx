@@ -25,6 +25,15 @@ export default async function KategoriePage(
 
   const siblingCategories = allCategories.filter((c) => c.id !== category.id);
 
+  // Collect unique attribute options across all products in this category
+  const attributeMap = new Map<string, Set<string>>();
+  for (const p of products) {
+    for (const attr of p.attributes) {
+      if (!attributeMap.has(attr.name)) attributeMap.set(attr.name, new Set());
+      for (const opt of attr.options) attributeMap.get(attr.name)!.add(opt);
+    }
+  }
+
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
       {/* Breadcrumb + title */}
@@ -46,7 +55,7 @@ export default async function KategoriePage(
           />
         )}
 
-        {/* Other categories */}
+        {/* Row 1: Other categories */}
         {siblingCategories.length > 0 && (
           <div className="mt-6 flex items-center gap-2 flex-wrap">
             <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
@@ -57,6 +66,19 @@ export default async function KategoriePage(
                 {cat.name}
               </Link>
             ))}
+          </div>
+        )}
+
+        {/* Row 2: Attribute pills from products in this category */}
+        {attributeMap.size > 0 && (
+          <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {Array.from(attributeMap.entries()).map(([attrName, options]) =>
+              Array.from(options).map((opt) => (
+                <span key={`${attrName}-${opt}`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
+                  {opt}
+                </span>
+              ))
+            )}
           </div>
         )}
       </section>
