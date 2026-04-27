@@ -41,5 +41,58 @@
     "title": "Thank you for your order!",
     "orderNumber": "Order number",
     "continueShop": "Continue shopping"
+  },
+  "status": {
+    "title": "Status & Transparency",
+    "intro": "Pragmatically honest. Not everything is decentralized - but we show what is.",
+    "lastUpdate": "Last update",
+    "emptyValue": "-",
+    "badges": {
+      "online": "online",
+      "warn": "warning",
+      "down": "down",
+      "unknown": "unknown"
+    },
+    "blocks": {
+      "bitcoinNetwork": { "title": "Bitcoin Network" },
+      "bitcoinPrice": { "title": "Bitcoin Price" },
+      "lightningNode": { "title": "Lightning Node" },
+      "btcpayServer": { "title": "BTCPay Server" },
+      "nextEvents": { "title": "Upcoming Events" }
+    },
+    "labels": {
+      "blockHeight": "Block height",
+      "sinceLastBlock": "Since last block",
+      "node": "Node",
+      "channels": "Channels",
+      "capacity": "Capacity",
+      "statuspage": "Status page",
+      "overall": "Overall",
+      "monitors": "Monitors",
+      "upOtherDown": "UP / OTHER / DOWN"
+    },
+    "links": {
+      "openAmboss": "Open on Amboss",
+      "openStatuspage": "Open status page",
+      "subscribeCalendar": "Subscribe to calendar",
+      "openCalendar": "Open in browser"
+    },
+    "sources": {
+      "ownNode": "Source: own node",
+      "btcpayRates": "Source: BTCPay Rates",
+      "lightningApi": "Source: Lightning status API",
+      "uptimeKuma": "Source: Uptime Kuma status page",
+      "googleCalendar": "Source: public Google Calendar"
+    },
+    "messages": {
+      "sourceUnavailable": "Source currently unavailable.",
+      "invalidData": "Source returned invalid data.",
+      "btcpayConfigMissing": "BTCPay configuration is missing. Rate cannot be loaded.",
+      "rateUnavailable": "No BTC/CHF rate available.",
+      "lightningUnavailable": "Lightning data is currently unavailable.",
+      "uptimeConfigMissing": "Uptime Kuma configuration is missing. Status page cannot be loaded.",
+      "calendarUnavailable": "Calendar currently unavailable.",
+      "noEvents": "No upcoming events."
+    }
   }
 }

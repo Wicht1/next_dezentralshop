@@ -41,5 +41,58 @@
     "title": "Vielen Dank für deine Bestellung!",
     "orderNumber": "Bestellnummer",
     "continueShop": "Weiter shoppen"
+  },
+  "status": {
+    "title": "Status & Transparenz",
+    "intro": "Pragmatisch ehrlich. Nicht alles ist dezentral - aber wir zeigen was ist.",
+    "lastUpdate": "Letztes Update",
+    "emptyValue": "-",
+    "badges": {
+      "online": "online",
+      "warn": "Warnung",
+      "down": "down",
+      "unknown": "unbekannt"
+    },
+    "blocks": {
+      "bitcoinNetwork": { "title": "Bitcoin Netzwerk" },
+      "bitcoinPrice": { "title": "Bitcoin Preis" },
+      "lightningNode": { "title": "Lightning Node" },
+      "btcpayServer": { "title": "BTCPay Server" },
+      "nextEvents": { "title": "Nächste Termine" }
+    },
+    "labels": {
+      "blockHeight": "Blockhöhe",
+      "sinceLastBlock": "Seit letztem Block",
+      "node": "Node",
+      "channels": "Channels",
+      "capacity": "Kapazität",
+      "statuspage": "Statuspage",
+      "overall": "Gesamt",
+      "monitors": "Monitore",
+      "upOtherDown": "UP / OTHER / DOWN"
+    },
+    "links": {
+      "openAmboss": "Auf Amboss öffnen",
+      "openStatuspage": "Statuspage öffnen",
+      "subscribeCalendar": "Kalender abonnieren",
+      "openCalendar": "Im Browser öffnen"
+    },
+    "sources": {
+      "ownNode": "Quelle: eigene Node",
+      "btcpayRates": "Quelle: BTCPay Rates",
+      "lightningApi": "Quelle: Lightning Status API",
+      "uptimeKuma": "Quelle: Uptime Kuma Statuspage",
+      "googleCalendar": "Quelle: öffentlicher Google-Kalender"
+    },
+    "messages": {
+      "sourceUnavailable": "Quelle aktuell nicht erreichbar.",
+      "invalidData": "Quelle lieferte keine gültigen Daten.",
+      "btcpayConfigMissing": "BTCPay-Konfiguration fehlt. Rate kann nicht geladen werden.",
+      "rateUnavailable": "Keine BTC/CHF-Rate verfügbar.",
+      "lightningUnavailable": "Lightning-Daten gerade nicht verfügbar.",
+      "uptimeConfigMissing": "Uptime-Kuma-Konfiguration fehlt. Statuspage kann nicht geladen werden.",
+      "calendarUnavailable": "Kalender aktuell nicht erreichbar.",
+      "noEvents": "Keine kommenden Termine."
+    }
   }
 }

@@ -41,5 +41,58 @@
     "title": "Merci pour votre commande !",
     "orderNumber": "Numéro de commande",
     "continueShop": "Continuer les achats"
+  },
+  "status": {
+    "title": "Statut & transparence",
+    "intro": "Honnêtement pragmatique. Tout n'est pas décentralisé - mais nous montrons ce qui l'est.",
+    "lastUpdate": "Dernière mise à jour",
+    "emptyValue": "-",
+    "badges": {
+      "online": "en ligne",
+      "warn": "alerte",
+      "down": "hors ligne",
+      "unknown": "inconnu"
+    },
+    "blocks": {
+      "bitcoinNetwork": { "title": "Réseau Bitcoin" },
+      "bitcoinPrice": { "title": "Prix du Bitcoin" },
+      "lightningNode": { "title": "Lightning Node" },
+      "btcpayServer": { "title": "BTCPay Server" },
+      "nextEvents": { "title": "Prochains rendez-vous" }
+    },
+    "labels": {
+      "blockHeight": "Hauteur de bloc",
+      "sinceLastBlock": "Depuis le dernier bloc",
+      "node": "Node",
+      "channels": "Channels",
+      "capacity": "Capacité",
+      "statuspage": "Page de statut",
+      "overall": "Global",
+      "monitors": "Moniteurs",
+      "upOtherDown": "UP / OTHER / DOWN"
+    },
+    "links": {
+      "openAmboss": "Ouvrir sur Amboss",
+      "openStatuspage": "Ouvrir la page de statut",
+      "subscribeCalendar": "S'abonner au calendrier",
+      "openCalendar": "Ouvrir dans le navigateur"
+    },
+    "sources": {
+      "ownNode": "Source : node propre",
+      "btcpayRates": "Source : BTCPay Rates",
+      "lightningApi": "Source : API de statut Lightning",
+      "uptimeKuma": "Source : page de statut Uptime Kuma",
+      "googleCalendar": "Source : Google Agenda public"
+    },
+    "messages": {
+      "sourceUnavailable": "Source actuellement inaccessible.",
+      "invalidData": "La source a renvoyé des données invalides.",
+      "btcpayConfigMissing": "La configuration BTCPay manque. Le taux ne peut pas être chargé.",
+      "rateUnavailable": "Aucun taux BTC/CHF disponible.",
+      "lightningUnavailable": "Les données Lightning ne sont pas disponibles actuellement.",
+      "uptimeConfigMissing": "La configuration Uptime Kuma manque. La page de statut ne peut pas être chargée.",
+      "calendarUnavailable": "Calendrier actuellement inaccessible.",
+      "noEvents": "Aucun rendez-vous à venir."
+    }
   }
 }
