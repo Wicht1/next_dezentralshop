@@ -43,21 +43,12 @@ export default async function KategoriePage(
       )
     : allProducts;
 
-  // Build category navigation group:
-  // If top-level → show current + its children
-  // If sub-category → show parent + siblings (same parent)
-  const isTopLevel = category.parent === 0;
-  const navCategories: { id: number; name: string; slug: string; isCurrent: boolean }[] = isTopLevel
-    ? [
-        { ...category, isCurrent: true },
-        ...allCategories.filter((c) => c.parent === category.id).map((c) => ({ ...c, isCurrent: false })),
-      ]
-    : [
-        ...allCategories
-          .filter((c) => c.id === category.parent || (c.parent === category.parent && c.id !== category.id))
-          .map((c) => ({ ...c, isCurrent: false })),
-        { ...category, isCurrent: true },
-      ].sort((a, b) => (a.id === category.parent ? -1 : b.id === category.parent ? 1 : 0));
+  // Build full category nav: all top-level cats, each with their children
+  const topLevelCats = allCategories.filter((c) => c.parent === 0);
+  const categoryGroups = topLevelCats.map((parent) => ({
+    parent,
+    children: allCategories.filter((c) => c.parent === parent.id),
+  }));
 
   // Only fil_ attributes as filters, strip prefix for display
   const filterMap = new Map<string, string[]>();
@@ -94,27 +85,53 @@ export default async function KategoriePage(
           />
         )}
 
-        {/* Row 1: Category navigation */}
-        <div className="mt-6 flex items-center gap-2 flex-wrap">
+        {/* Row 1: All categories, always static, parent→children connected */}
+        <div className="mt-6 flex items-center gap-3 flex-wrap">
           <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
             Alle
           </Link>
-          {navCategories.map((cat) => (
-            <Link
-              key={cat.id}
-              href={cat.isCurrent ? baseUrl : `/${locale}/kategorie/${cat.slug}`}
-              className="font-mono uppercase px-3 py-1.5"
-              style={{
-                fontSize: 10,
-                letterSpacing: "0.14em",
-                background: cat.isCurrent ? "transparent" : "#0a0a0a",
-                color: cat.isCurrent ? "#f39320" : "#fafafa",
-                border: cat.isCurrent ? "1px solid #f39320" : "1px solid #0a0a0a",
-              }}
-            >
-              {cat.name}
-            </Link>
-          ))}
+          {categoryGroups.map(({ parent, children }) => {
+            const parentActive = category.id === parent.id;
+            return (
+              <div key={parent.id} className="flex items-center">
+                <Link
+                  href={`/${locale}/kategorie/${parent.slug}`}
+                  className="font-mono uppercase px-3 py-1.5"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    background: parentActive ? "transparent" : "#0a0a0a",
+                    color: parentActive ? "#f39320" : "#fafafa",
+                    border: parentActive ? "1px solid #f39320" : "1px solid #0a0a0a",
+                  }}
+                >
+                  {parent.name}
+                </Link>
+                {children.map((child) => {
+                  const childActive = category.id === child.id;
+                  return (
+                    <div key={child.id} className="flex items-center">
+                      {/* connector */}
+                      <div style={{ width: 10, height: 1, background: "#e7e4df", flexShrink: 0 }} />
+                      <Link
+                        href={`/${locale}/kategorie/${child.slug}`}
+                        className="font-mono uppercase px-3 py-1.5"
+                        style={{
+                          fontSize: 10,
+                          letterSpacing: "0.14em",
+                          background: childActive ? "transparent" : "#0a0a0a",
+                          color: childActive ? "#f39320" : "#fafafa",
+                          border: childActive ? "1px solid #f39320" : "1px solid #0a0a0a",
+                        }}
+                      >
+                        {child.name}
+                      </Link>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })}
         </div>
 
         {/* Row 2: fil_ attribute filters */}
