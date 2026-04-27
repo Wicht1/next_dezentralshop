@@ -19,7 +19,7 @@ export default function FilterDrawer(props: FilterSidebarProps) {
           <line x1="4" y1="12" x2="16" y2="12" />
           <line x1="4" y1="18" x2="12" y2="18" />
         </svg>
-        Filter{props.activeFilters.length > 0 ? ` · ${props.activeFilters.length}` : ""}
+        Filter{(props.activeCats.length + props.activeFilters.length) > 0 ? ` · ${props.activeCats.length + props.activeFilters.length}` : ""}
       </button>
 
       {/* Mobile full-screen overlay */}

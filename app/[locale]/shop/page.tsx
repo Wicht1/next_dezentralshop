@@ -4,7 +4,7 @@ import LimitedCounter from "@/components/ui/LimitedCounter";
 import Link from "next/link";
 import Image from "next/image";
 import { getProducts, getCategories, parsePrice } from "@/lib/woocommerce";
-import FilterSidebarContent, { buildToggleUrl } from "@/components/FilterSidebarContent";
+import FilterSidebarContent, { toggleCatUrl, toggleFilterUrl } from "@/components/FilterSidebarContent";
 import FilterDrawer from "@/components/FilterDrawer";
 
 const decode = (s: string) =>
@@ -15,6 +15,9 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
 
   const raw = searchParams.filter;
   const activeFilters: string[] = raw ? (Array.isArray(raw) ? raw : [raw]) : [];
+
+  const rawCat = searchParams.cat;
+  const activeCats: string[] = rawCat ? (Array.isArray(rawCat) ? rawCat : [rawCat]) : [];
 
   const [allProducts, allCategories] = await Promise.all([
     getProducts({ per_page: 96 }),
@@ -40,17 +43,25 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
       options: Array.from(opts).sort((a, b) => a.localeCompare(b, "de")),
     }));
 
-  // AND logic: product must match all active filters
-  const displayProducts = activeFilters.length > 0
-    ? allProducts.filter((p) => {
-        const allOpts = p.attributes.flatMap((a) => a.options.map(decode));
-        return activeFilters.every((f) => allOpts.includes(f));
-      })
-    : allProducts.slice(0, 24);
+  // Filter by category (OR) then by attribute (AND)
+  const hasAnyFilter = activeCats.length > 0 || activeFilters.length > 0;
+  let displayProducts = allProducts;
+  if (activeCats.length > 0) {
+    displayProducts = displayProducts.filter((p) =>
+      p.categories.some((c) => activeCats.includes(c.slug))
+    );
+  }
+  if (activeFilters.length > 0) {
+    displayProducts = displayProducts.filter((p) => {
+      const allOpts = p.attributes.flatMap((a) => a.options.map(decode));
+      return activeFilters.every((f) => allOpts.includes(f));
+    });
+  }
+  if (!hasAnyFilter) displayProducts = displayProducts.slice(0, 24);
 
   const baseUrl = `/${locale}/shop`;
 
-  const sidebarProps = { categories: topLevelCategories, filterGroups, activeFilters, locale, baseUrl };
+  const sidebarProps = { categories: topLevelCategories, filterGroups, activeCats, activeFilters, locale, baseUrl };
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
@@ -64,7 +75,7 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
             Alle Produkte.
           </h1>
           <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>
-            {displayProducts.length}{activeFilters.length > 0 ? ` von ${allProducts.length}` : ""} Produkte
+            {displayProducts.length}{hasAnyFilter ? ` von ${allProducts.length}` : ""} Produkte
           </div>
         </div>
       </section>
@@ -82,17 +93,32 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
           {/* Toolbar */}
           <div className="flex items-center justify-between pb-5 flex-wrap gap-3" style={{ borderBottom: "1px solid #0a0a0a" }}>
             <div className="flex items-center gap-2 flex-wrap">
-              {activeFilters.length > 0 ? (
-                activeFilters.map((f) => (
-                  <Link
-                    key={f}
-                    href={buildToggleUrl(f, activeFilters, baseUrl)}
-                    className="inline-flex items-center gap-2 font-mono uppercase"
-                    style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa", padding: "5px 9px" }}
-                  >
-                    {f} <span style={{ opacity: 0.6 }}>×</span>
-                  </Link>
-                ))
+              {hasAnyFilter ? (
+                <>
+                  {activeCats.map((slug) => {
+                    const cat = topLevelCategories.find((c) => c.slug === slug);
+                    return (
+                      <Link
+                        key={slug}
+                        href={toggleCatUrl(slug, activeCats, activeFilters, baseUrl)}
+                        className="inline-flex items-center gap-2 font-mono uppercase"
+                        style={{ fontSize: 10, letterSpacing: "0.14em", background: "#373939", color: "#fafafa", padding: "5px 9px" }}
+                      >
+                        {cat?.name ?? slug} <span style={{ opacity: 0.6 }}>×</span>
+                      </Link>
+                    );
+                  })}
+                  {activeFilters.map((f) => (
+                    <Link
+                      key={f}
+                      href={toggleFilterUrl(f, activeCats, activeFilters, baseUrl)}
+                      className="inline-flex items-center gap-2 font-mono uppercase"
+                      style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa", padding: "5px 9px" }}
+                    >
+                      {f} <span style={{ opacity: 0.6 }}>×</span>
+                    </Link>
+                  ))}
+                </>
               ) : (
                 <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>
                   {allProducts.length} Produkte total
