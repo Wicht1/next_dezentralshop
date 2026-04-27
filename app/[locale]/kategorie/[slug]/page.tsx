@@ -28,15 +28,6 @@ export default async function KategoriePage(
     per_page: 24,
   });
 
-  // Collect unique attribute options across ALL products (before filtering)
-  const attributeMap = new Map<string, Set<string>>();
-  for (const p of allProducts) {
-    for (const attr of p.attributes) {
-      if (!attributeMap.has(attr.name)) attributeMap.set(attr.name, new Set());
-      for (const opt of attr.options) attributeMap.get(attr.name)!.add(opt);
-    }
-  }
-
   const products = activeFilter
     ? allProducts.filter((p) =>
         p.attributes.some((a) => a.options.some((o) => o === activeFilter))
@@ -52,13 +43,14 @@ export default async function KategoriePage(
   // Row 2: sub-categories of the active parent + fil_ filters
   const subCats = allCategories.filter((c) => c.parent === activeParentId);
 
-  // Only fil_ attributes as filters, strip prefix for display
-  const filterMap = new Map<string, string[]>();
-  for (const [name, opts] of attributeMap.entries()) {
-    const lower = name.toLowerCase();
-    if (lower.startsWith("fil_") || lower.startsWith("fil ")) {
-      const label = name.replace(/^fil[_ ]/i, "");
-      filterMap.set(label, Array.from(opts));
+  // Only fil_ attributes as filters (matched on slug, not display name)
+  const filterOptions = new Set<string>();
+  for (const p of allProducts) {
+    for (const attr of p.attributes) {
+      const slug = attr.slug ?? attr.name;
+      if (slug.toLowerCase().startsWith("fil_")) {
+        for (const opt of attr.options) filterOptions.add(opt);
+      }
     }
   }
 
@@ -114,7 +106,7 @@ export default async function KategoriePage(
         </div>
 
         {/* Row 2: Sub-categories (black) + fil_ filters (light) */}
-        {(subCats.length > 0 || filterMap.size > 0) && (
+        {(subCats.length > 0 || filterOptions.size > 0) && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             {subCats.map((sub) => {
               const isActive = category.id === sub.id;
@@ -135,7 +127,7 @@ export default async function KategoriePage(
                 </Link>
               );
             })}
-            {subCats.length > 0 && filterMap.size > 0 && (
+            {subCats.length > 0 && filterOptions.size > 0 && (
               <div style={{ width: 1, height: 16, background: "#e7e4df", margin: "0 4px", flexShrink: 0 }} />
             )}
             {activeFilter && (
@@ -147,27 +139,25 @@ export default async function KategoriePage(
                 ×
               </Link>
             )}
-            {Array.from(filterMap.entries()).flatMap(([, options]) =>
-              options.map((opt) => {
-                const isActive = activeFilter === opt;
-                return (
-                  <Link
-                    key={opt}
-                    href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`}
-                    className="font-mono uppercase px-3 py-1.5"
-                    style={{
-                      fontSize: 10,
-                      letterSpacing: "0.14em",
-                      background: isActive ? "#0a0a0a" : "transparent",
-                      color: isActive ? "#fafafa" : "#373939",
-                      border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df",
-                    }}
-                  >
-                    {opt}
-                  </Link>
-                );
-              })
-            )}
+            {Array.from(filterOptions).map((opt) => {
+              const isActive = activeFilter === opt;
+              return (
+                <Link
+                  key={opt}
+                  href={isActive ? baseUrl : `${baseUrl}?filter=${encodeURIComponent(opt)}`}
+                  className="font-mono uppercase px-3 py-1.5"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    background: isActive ? "#0a0a0a" : "transparent",
+                    color: isActive ? "#fafafa" : "#373939",
+                    border: isActive ? "1px solid #0a0a0a" : "1px solid #e7e4df",
+                  }}
+                >
+                  {opt}
+                </Link>
+              );
+            })}
           </div>
         )}
       </section>

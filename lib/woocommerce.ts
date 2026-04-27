@@ -22,6 +22,7 @@ export type WCCategory = {
 export type WCAttribute = {
   id: number;
   name: string;
+  slug?: string;
   options: string[];
   variation: boolean;
 };
