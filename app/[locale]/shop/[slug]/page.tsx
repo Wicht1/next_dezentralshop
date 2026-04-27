@@ -34,8 +34,6 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
   const mainImage = product.images[0];
   const thumbnails = product.images.slice(1, 5);
   const inStock = product.stock_status === "instock";
-  const tags = product.attributes.flatMap((a) => a.options).slice(0, 4);
-
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
       {/* Breadcrumb */}
@@ -77,11 +75,6 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
               {mainImage ? (
                 <div className="relative w-full" style={{ aspectRatio: "1/1", background: "#f4f2ee" }}>
                   <Image src={mainImage.src} alt={mainImage.alt || product.name} fill className="object-contain" sizes="(max-width: 1280px) 50vw, 640px" priority />
-                  {tags.length > 0 && (
-                    <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
-                      {tags.slice(0, 2).map((t) => <Pill key={t}>{t}</Pill>)}
-                    </div>
-                  )}
                 </div>
               ) : (
                 <ImagePlaceholder label={product.name} ratio="1/1" />

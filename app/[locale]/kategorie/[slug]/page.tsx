@@ -179,8 +179,6 @@ export default async function KategoriePage(
                 const price = parsePrice(p.price);
                 const img = p.images[0];
                 const isLimited = p.manage_stock && p.stock_quantity !== null && p.stock_quantity <= 21;
-                const tags = p.attributes.flatMap((a) => a.options).slice(0, 3);
-
                 return (
                   <Link key={p.id} href={`/${locale}/shop/${p.slug}`}>
                     <div className="relative">
@@ -220,11 +218,6 @@ export default async function KategoriePage(
                       </span>
                     </div>
                     <div className="mt-3"><PriceBlock chf={price} size="sm" /></div>
-                    {tags.length > 0 && (
-                      <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                        {tags.map((tg) => <Pill key={tg}>{tg}</Pill>)}
-                      </div>
-                    )}
                     {isLimited && p.stock_quantity !== null && (
                       <div className="mt-3"><LimitedCounter left={p.stock_quantity} total={21} /></div>
                     )}
