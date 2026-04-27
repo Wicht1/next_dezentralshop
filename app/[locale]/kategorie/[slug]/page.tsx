@@ -43,7 +43,31 @@ export default async function KategoriePage(
       )
     : allProducts;
 
-  const siblingCategories = allCategories.filter((c) => c.id !== category.id);
+  // Build category navigation group:
+  // If top-level → show current + its children
+  // If sub-category → show parent + siblings (same parent)
+  const isTopLevel = category.parent === 0;
+  const navCategories: { id: number; name: string; slug: string; isCurrent: boolean }[] = isTopLevel
+    ? [
+        { ...category, isCurrent: true },
+        ...allCategories.filter((c) => c.parent === category.id).map((c) => ({ ...c, isCurrent: false })),
+      ]
+    : [
+        ...allCategories
+          .filter((c) => c.id === category.parent || (c.parent === category.parent && c.id !== category.id))
+          .map((c) => ({ ...c, isCurrent: false })),
+        { ...category, isCurrent: true },
+      ].sort((a, b) => (a.id === category.parent ? -1 : b.id === category.parent ? 1 : 0));
+
+  // Only fil_ attributes as filters, strip prefix for display
+  const filterMap = new Map<string, string[]>();
+  for (const [name, opts] of attributeMap.entries()) {
+    const lower = name.toLowerCase();
+    if (lower.startsWith("fil_") || lower.startsWith("fil ")) {
+      const label = name.replace(/^fil[_ ]/i, "");
+      filterMap.set(label, Array.from(opts));
+    }
+  }
 
   const baseUrl = `/${locale}/kategorie/${slug}`;
 
@@ -70,22 +94,31 @@ export default async function KategoriePage(
           />
         )}
 
-        {/* Row 1: Other categories */}
-        {siblingCategories.length > 0 && (
-          <div className="mt-6 flex items-center gap-2 flex-wrap">
-            <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
-              Alle
+        {/* Row 1: Category navigation */}
+        <div className="mt-6 flex items-center gap-2 flex-wrap">
+          <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
+            Alle
+          </Link>
+          {navCategories.map((cat) => (
+            <Link
+              key={cat.id}
+              href={cat.isCurrent ? baseUrl : `/${locale}/kategorie/${cat.slug}`}
+              className="font-mono uppercase px-3 py-1.5"
+              style={{
+                fontSize: 10,
+                letterSpacing: "0.14em",
+                background: cat.isCurrent ? "transparent" : "#0a0a0a",
+                color: cat.isCurrent ? "#f39320" : "#fafafa",
+                border: cat.isCurrent ? "1px solid #f39320" : "1px solid #0a0a0a",
+              }}
+            >
+              {cat.name}
             </Link>
-            {siblingCategories.slice(0, 8).map((cat) => (
-              <Link key={cat.id} href={`/${locale}/kategorie/${cat.slug}`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa" }}>
-                {cat.name}
-              </Link>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
 
-        {/* Row 2: Attribute filter pills */}
-        {attributeMap.size > 0 && (
+        {/* Row 2: fil_ attribute filters */}
+        {filterMap.size > 0 && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
             {activeFilter && (
               <Link
@@ -96,8 +129,8 @@ export default async function KategoriePage(
                 Alle
               </Link>
             )}
-            {Array.from(attributeMap.entries()).map(([, options]) =>
-              Array.from(options).map((opt) => {
+            {Array.from(filterMap.entries()).flatMap(([, options]) =>
+              options.map((opt) => {
                 const isActive = activeFilter === opt;
                 return (
                   <Link
