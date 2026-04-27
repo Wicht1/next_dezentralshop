@@ -71,14 +71,8 @@ export default async function Footer({ locale }: { locale: string }) {
             className="mt-6 font-mono uppercase"
             style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}
           >
-            Block · {bitcoinNetwork?.heightLabel ?? "-"}&nbsp;&nbsp;·&nbsp;&nbsp;letzter Block ·{" "}
-            {bitcoinNetwork?.sinceLastBlockLabel ?? "-"}
-          </div>
-          <div
-            className="mt-2 font-mono uppercase"
-            style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}
-          >
-            Halving - {bitcoinNetwork?.halving.remainingDays ?? "-"} Tage
+            Block · {bitcoinNetwork?.heightLabel ?? "-"}&nbsp;&nbsp;|&nbsp;&nbsp;Halving ·{" "}
+            {bitcoinNetwork?.halving.remainingDays ?? "-"} Tage
           </div>
           {bitcoinNetwork?.halving && (
             <div className="mt-3">
@@ -86,7 +80,6 @@ export default async function Footer({ locale }: { locale: string }) {
                 left={bitcoinNetwork.halving.remainingBlocks}
                 total={210000}
                 progressPercent={bitcoinNetwork.halving.progressPercent}
-                label={`noch ${bitcoinNetwork.halving.remainingBlocksLabel}/210'000`}
               />
             </div>
           )}
