@@ -322,8 +322,15 @@ async function getBtcpayServer(copy: StatusCopy): Promise<StatusEntry> {
   }
 
   try {
-    const url = `${kumaBase}/api/status-page/${encodeURIComponent(statusSlug)}`;
-    const data = await fetchJson<Record<string, unknown>>(url, 30);
+    const encodedSlug = encodeURIComponent(statusSlug);
+    const [data, heartbeatData] = await Promise.all([
+      fetchJson<Record<string, unknown>>(`${kumaBase}/api/status-page/${encodedSlug}`, 30),
+      fetchJson<Record<string, unknown>>(`${kumaBase}/api/status-page/heartbeat/${encodedSlug}`, 30),
+    ]);
+    const heartbeatList =
+      heartbeatData.heartbeatList && typeof heartbeatData.heartbeatList === "object"
+        ? (heartbeatData.heartbeatList as Record<string, unknown>)
+        : {};
     const groups = Array.isArray(data.publicGroupList) ? data.publicGroupList : [];
     let up = 0;
     let other = 0;
@@ -336,8 +343,16 @@ async function getBtcpayServer(copy: StatusCopy): Promise<StatusEntry> {
           : [];
 
       for (const monitor of monitors) {
-        const status =
-          monitor && typeof monitor === "object" ? (monitor as { status?: unknown }).status : undefined;
+        const monitorRecord =
+          monitor && typeof monitor === "object" ? (monitor as { id?: unknown; status?: unknown }) : {};
+        const monitorId = typeof monitorRecord.id === "number" ? String(monitorRecord.id) : String(monitorRecord.id ?? "");
+        const monitorHeartbeats = Array.isArray(heartbeatList[monitorId]) ? heartbeatList[monitorId] : [];
+        const latestHeartbeat = monitorHeartbeats.at(-1);
+        const latestStatus =
+          latestHeartbeat && typeof latestHeartbeat === "object"
+            ? (latestHeartbeat as { status?: unknown }).status
+            : undefined;
+        const status = latestStatus ?? monitorRecord.status;
         const numericStatus = typeof status === "number" ? status : Number(status);
 
         if (numericStatus === 0) {
@@ -654,8 +669,8 @@ async function getNextEvents(locale: Locale, copy: StatusCopy): Promise<StatusEn
     if (!events.length) {
       return {
         ...base,
-        state: "warn",
-        stateLabel: stateLabel(copy, "warn"),
+        state: "online",
+        stateLabel: stateLabel(copy, "online"),
         events: [],
         links,
         note: copy.messages.noEvents,
