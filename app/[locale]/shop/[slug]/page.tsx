@@ -1,6 +1,9 @@
 import Pill from "@/components/ui/Pill";
 import PriceBlock from "@/components/ui/PriceBlock";
 import Link from "next/link";
+import Image from "next/image";
+import { getProductBySlug, getProductVariations, parsePrice } from "@/lib/woocommerce";
+import { notFound } from "next/navigation";
 
 function ImagePlaceholder({ label, ratio = "1/1", dark = false }: { label: string; ratio?: string; dark?: boolean }) {
   const bg = dark ? "#0a0a0a" : "#f4f2ee";
@@ -15,35 +18,23 @@ function ImagePlaceholder({ label, ratio = "1/1", dark = false }: { label: strin
   );
 }
 
-const TABS = ["Beschreibung", "Technisch", "Lieferumfang", "Video & Setup", "Rezensionen", "Versand"];
-
-const FEATURES = [
-  { k: "01", t: "Air-gapped signieren", d: "PSBTs per microSD oder NFC. Der private Key verlässt das Gerät nie." },
-  { k: "02", t: "Zwei Secure Elements", d: "Zwei unabhängige Chips (508A + 608A), kombiniert gegen Supply-Chain-Angriffe." },
-  { k: "03", t: "Duress-PIN", d: "Zweite PIN zeigt eine leere Wallet — falls du gezwungen wirst." },
-  { k: "04", t: "Reproduzierbare Builds", d: "Firmware prüft sich selbst. Du musst nicht vertrauen — du kannst verifizieren." },
-];
-
-const SPECS = [
-  ["Chip", "Dual Secure Element"],
-  ["Schnittstellen", "USB-C, NFC, microSD"],
-  ["Display", "128×64 OLED"],
-  ["Firmware", "Bitcoin-only, v5.4.2"],
-  ["PSBT", "BIP-174"],
-  ["Masse", "94 × 51 × 10 mm"],
-  ["Gewicht", "31 g"],
-  ["Hergestellt", "Kanada"],
-];
-
-const ARTICLES = [
-  { n: "Nr. 014", t: "Seed-Backup richtig gemacht", m: "Guide · 12 min" },
-  { n: "Nr. 013", t: "BitBox02 vs. Coldcard Mk4 — direkter Vergleich", m: "Review · 18 min" },
-  { n: "Nr. 009", t: "Multisig mit Sparrow + Coldcard einrichten", m: "Tutorial · 22 min" },
-];
+const TABS = ["Beschreibung", "Technisch", "Versand"];
 
 export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug]">) {
   const { locale, slug } = await props.params;
-  const name = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const product = await getProductBySlug(slug);
+  if (!product) notFound();
+
+  const variations = product.type === "variable"
+    ? await getProductVariations(product.id)
+    : [];
+
+  const price = parsePrice(product.price);
+  const mainImage = product.images[0];
+  const thumbnails = product.images.slice(1, 5);
+  const inStock = product.stock_status === "instock";
+  const tags = product.attributes.flatMap((a) => a.options).slice(0, 4);
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
@@ -51,10 +42,16 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
       <section className="max-w-[1280px] mx-auto px-8 pt-8 pb-4">
         <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>
           <Link href={`/${locale}/shop`}>Shop</Link>
+          {product.categories[0] && (
+            <>
+              <span className="mx-2">/</span>
+              <Link href={`/${locale}/kategorie/${product.categories[0].slug}`}>
+                {product.categories[0].name}
+              </Link>
+            </>
+          )}
           <span className="mx-2">/</span>
-          Hardware Wallets
-          <span className="mx-2">/</span>
-          <span style={{ color: "#0a0a0a" }}>{name}</span>
+          <span style={{ color: "#0a0a0a" }}>{product.name}</span>
         </div>
       </section>
 
@@ -63,37 +60,53 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
         {/* Gallery */}
         <div className="col-span-7">
           <div className="grid grid-cols-12 gap-3">
-            <div className="col-span-2 flex flex-col gap-3">
-              {["Front", "Back", "Verpackt", "Detail", "Bundle"].map((t, i) => (
-                <div key={t} style={{ border: i === 0 ? "1px solid #0a0a0a" : "1px solid transparent", padding: 2 }}>
-                  <ImagePlaceholder label={t} ratio="1/1" />
-                </div>
-              ))}
-            </div>
-            <div className="col-span-10 relative">
-              <ImagePlaceholder label={`${name} — Hero`} ratio="1/1" />
-              <div className="absolute top-4 left-4 flex gap-2">
-                <Pill variant="solid">Open Source</Pill>
-                <Pill>Air-gapped</Pill>
+            {/* Thumbnails */}
+            {thumbnails.length > 0 && (
+              <div className="col-span-2 flex flex-col gap-3">
+                {thumbnails.map((img, i) => (
+                  <div key={img.id} style={{ border: i === 0 ? "1px solid #0a0a0a" : "1px solid transparent", padding: 2 }}>
+                    <div className="relative w-full" style={{ aspectRatio: "1/1", background: "#f4f2ee" }}>
+                      <Image src={img.src} alt={img.alt || product.name} fill className="object-contain" sizes="80px" />
+                    </div>
+                  </div>
+                ))}
               </div>
-              <button className="absolute bottom-4 right-4 w-10 h-10 flex items-center justify-center" style={{ background: "#fafafa", border: "1px solid #e7e4df" }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" strokeWidth="1.5">
-                  <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
-                </svg>
-              </button>
+            )}
+            {/* Main image */}
+            <div className={`${thumbnails.length > 0 ? "col-span-10" : "col-span-12"} relative`}>
+              {mainImage ? (
+                <div className="relative w-full" style={{ aspectRatio: "1/1", background: "#f4f2ee" }}>
+                  <Image src={mainImage.src} alt={mainImage.alt || product.name} fill className="object-contain" sizes="(max-width: 1280px) 50vw, 640px" priority />
+                  {tags.length > 0 && (
+                    <div className="absolute top-4 left-4 flex gap-2 flex-wrap">
+                      {tags.slice(0, 2).map((t) => <Pill key={t}>{t}</Pill>)}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <ImagePlaceholder label={product.name} ratio="1/1" />
+              )}
             </div>
           </div>
         </div>
 
         {/* Buy panel */}
         <div className="col-span-5">
-          <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>Coinkite · Kanada</div>
+          {product.categories[0] && (
+            <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>
+              {product.categories[0].name}
+            </div>
+          )}
           <h1 className="tracking-tight mt-3" style={{ fontSize: 44, letterSpacing: "-0.025em", fontWeight: 500, lineHeight: 1.02 }}>
-            {name}
+            {product.name}
           </h1>
-          <p className="mt-3" style={{ fontSize: 15, color: "#373939", lineHeight: 1.5 }}>
-            Air-gapped Hardware Wallet. Bitcoin-only Firmware. Secure-Element und NFC für PSBT.
-          </p>
+          {product.short_description && (
+            <div
+              className="mt-3 prose-sm"
+              style={{ fontSize: 15, color: "#373939", lineHeight: 1.5 }}
+              dangerouslySetInnerHTML={{ __html: product.short_description }}
+            />
+          )}
 
           {/* Rating */}
           <div className="mt-5 flex items-center gap-3">
@@ -108,50 +121,51 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
           </div>
 
           <div className="mt-6 py-5" style={{ borderTop: "1px solid #e7e4df", borderBottom: "1px solid #e7e4df" }}>
-            <PriceBlock chf={178} size="lg" btcSave btcSaveStyle="detail" />
+            <PriceBlock chf={price} size="lg" btcSave btcSaveStyle="detail" />
           </div>
 
           {/* Variants */}
-          <div className="mt-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#0a0a0a" }}>Edition</div>
-              <span style={{ fontSize: 12, color: "#373939" }}>Classic gewählt</span>
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              {[{ n: "Classic", sub: "Standard", active: true }, { n: "Q", sub: "Tastatur", active: false }, { n: "Bundle", sub: "+ Seedplate", active: false }].map((v) => (
-                <button key={v.n} className="py-3 px-3 text-left" style={{ border: `1px solid ${v.active ? "#0a0a0a" : "#e7e4df"}`, background: v.active ? "#0a0a0a" : "transparent", color: v.active ? "#fafafa" : "#0a0a0a" }}>
-                  <div style={{ fontSize: 13, fontWeight: 500 }}>{v.n}</div>
-                  <div className="font-mono mt-1" style={{ fontSize: 10, opacity: 0.7, letterSpacing: "0.06em" }}>{v.sub}</div>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Color */}
-          <div className="mt-6">
-            <div className="font-mono uppercase mb-3" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#0a0a0a" }}>Gehäuse</div>
-            <div className="flex gap-2">
-              {[{ n: "Transparent", c: "#e4e0d9" }, { n: "Schwarz", c: "#0a0a0a" }, { n: "Orange", c: "#f39320" }].map((c, i) => (
-                <button key={c.n} className="flex items-center gap-2 pr-3" style={{ border: `1px solid ${i === 0 ? "#0a0a0a" : "#e7e4df"}`, padding: 3, paddingRight: 10 }}>
-                  <span className="inline-block w-7 h-7" style={{ background: c.c, border: i === 1 ? "none" : "1px solid #e7e4df" }} />
-                  <span style={{ fontSize: 12, color: "#0a0a0a" }}>{c.n}</span>
-                </button>
-              ))}
-            </div>
-          </div>
+          {product.type === "variable" && variations.length > 0 && (
+            product.attributes.filter((a) => a.variation).map((attr) => (
+              <div key={attr.id} className="mt-6">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#0a0a0a" }}>{attr.name}</div>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {attr.options.map((opt, i) => (
+                    <button key={opt} className="py-2 px-4" style={{ border: `1px solid ${i === 0 ? "#0a0a0a" : "#e7e4df"}`, background: i === 0 ? "#0a0a0a" : "transparent", color: i === 0 ? "#fafafa" : "#0a0a0a", fontSize: 13 }}>
+                      {opt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
 
           {/* Stock */}
           <div className="mt-6 flex items-center gap-2" style={{ fontSize: 13, color: "#0a0a0a" }}>
-            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: "#2a9d5a" }} />
-            <span>Auf Lager · versandfertig heute</span>
-            <span style={{ color: "#373939", marginLeft: 4 }}>· bis 16:00 bestellt, morgen da</span>
+            <span className="inline-block w-1.5 h-1.5 rounded-full" style={{ background: inStock ? "#2a9d5a" : "#e63946" }} />
+            {inStock ? (
+              <>
+                <span>Auf Lager</span>
+                {product.stock_quantity !== null && (
+                  <span style={{ color: "#373939" }}>· noch {product.stock_quantity} verfügbar</span>
+                )}
+              </>
+            ) : (
+              <span style={{ color: "#e63946" }}>Ausverkauft</span>
+            )}
           </div>
 
           {/* CTAs */}
           <div className="mt-6 grid grid-cols-5 gap-3">
-            <button className="col-span-3 h-14 flex items-center justify-center gap-2" style={{ background: "#0a0a0a", color: "#fafafa", fontSize: 14, fontWeight: 500 }}>
+            <button
+              disabled={!inStock}
+              className="col-span-3 h-14 flex items-center justify-center gap-2"
+              style={{ background: inStock ? "#0a0a0a" : "#e7e4df", color: inStock ? "#fafafa" : "#373939", fontSize: 14, fontWeight: 500, cursor: inStock ? "pointer" : "not-allowed" }}
+            >
               In den Warenkorb
-              <span className="font-mono" style={{ opacity: 0.6 }}>· CHF 178.00</span>
+              <span className="font-mono" style={{ opacity: 0.6 }}>· CHF {price.toFixed(2)}</span>
             </button>
             <Link href={`/${locale}/beratung`} className="col-span-2 h-14 flex items-center justify-center gap-2" style={{ background: "transparent", color: "#0a0a0a", border: "1px solid #0a0a0a", fontSize: 14 }}>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -189,84 +203,52 @@ export default async function ProduktPage(props: PageProps<"/[locale]/shop/[slug
 
       {/* Long-form content */}
       <section className="max-w-[1280px] mx-auto px-8 py-20 grid grid-cols-12 gap-10">
+        {/* Description */}
         <div className="col-span-8">
-          <div className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.22em", color: "#373939" }}>§1 · Kurz gesagt</div>
-          <p className="mt-5" style={{ fontSize: 22, lineHeight: 1.45, color: "#0a0a0a", letterSpacing: "-0.005em" }}>
-            Der {name} ist für uns der Standard, wenn es um sichere Bitcoin-Aufbewahrung im
-            Alltag geht. Air-gapped, open-source, Bitcoin-only — und verstanden vom Käufer, nicht nur vom Hersteller.
-          </p>
-
-          <div className="mt-16 grid grid-cols-2 gap-8">
-            {FEATURES.map((f) => (
-              <div key={f.k} style={{ borderTop: "1px solid #0a0a0a", paddingTop: 18 }}>
-                <div className="font-mono" style={{ fontSize: 11, color: "#373939", letterSpacing: "0.14em" }}>{f.k}</div>
-                <div className="mt-3 tracking-tight" style={{ fontSize: 20, fontWeight: 500, letterSpacing: "-0.01em" }}>{f.t}</div>
-                <p className="mt-2" style={{ fontSize: 14, color: "#373939", lineHeight: 1.6 }}>{f.d}</p>
-              </div>
-            ))}
-          </div>
-
-          {/* Video */}
-          <div className="mt-20">
-            <div className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.22em", color: "#373939" }}>§2 · Setup-Video</div>
-            <h3 className="tracking-tight mt-4" style={{ fontSize: 28, letterSpacing: "-0.02em", fontWeight: 500 }}>Einrichtung in 14 Minuten.</h3>
-            <div className="mt-6 relative">
-              <div className="relative overflow-hidden w-full" style={{ aspectRatio: "16/9", background: "repeating-linear-gradient(135deg, #0a0a0a 0 14px, #121212 14px 15px)" }}>
-                <div className="absolute bottom-3 left-4 font-mono" style={{ fontSize: 11, color: "#fafafa" }}>14:02 · Deutsch · by Dezentralshop</div>
-              </div>
-              <button className="absolute inset-0 m-auto flex items-center justify-center" style={{ width: 64, height: 64, background: "#fafafa" }}>
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="#0a0a0a"><path d="M4 2l12 7-12 7z" /></svg>
-              </button>
-            </div>
-          </div>
-
-          {/* Further reading */}
-          <div className="mt-20">
-            <div className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.22em", color: "#373939" }}>§3 · Weiterlesen</div>
-            <div className="mt-6" style={{ borderTop: "1px solid #e7e4df", borderBottom: "1px solid #e7e4df" }}>
-              {ARTICLES.map((a) => (
-                <Link key={a.n} href={`/${locale}/wissen`} className="flex items-center justify-between py-5" style={{ borderTop: "1px solid #e7e4df" }}>
-                  <div className="flex items-baseline gap-6">
-                    <span className="font-mono" style={{ fontSize: 11, color: "#373939", letterSpacing: "0.1em" }}>{a.n}</span>
-                    <span style={{ fontSize: 18, color: "#0a0a0a", fontWeight: 500, letterSpacing: "-0.01em" }}>{a.t}</span>
-                  </div>
-                  <div className="flex items-center gap-6">
-                    <span className="font-mono" style={{ fontSize: 11, color: "#373939" }}>{a.m}</span>
-                    <span style={{ fontSize: 16, color: "#0a0a0a" }}>→</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
+          {product.description && (
+            <>
+              <div className="font-mono uppercase" style={{ fontSize: 11, letterSpacing: "0.22em", color: "#373939" }}>§1 · Beschreibung</div>
+              <div
+                className="mt-5 prose prose-zinc max-w-none"
+                style={{ fontSize: 15, lineHeight: 1.7, color: "#373939" }}
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            </>
+          )}
         </div>
 
         {/* Spec sheet */}
         <aside className="col-span-4">
           <div className="p-6" style={{ background: "#f4f2ee" }}>
-            <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>Datenblatt</div>
-            <div className="tracking-tight mt-2" style={{ fontSize: 22, letterSpacing: "-0.015em", fontWeight: 500 }}>Technisches.</div>
+            <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>Details</div>
+            <div className="tracking-tight mt-2" style={{ fontSize: 22, letterSpacing: "-0.015em", fontWeight: 500 }}>Produktinfo.</div>
             <div className="mt-5">
-              {SPECS.map(([k, v]) => (
-                <div key={k} className="flex items-baseline justify-between py-2.5" style={{ borderBottom: "1px solid #e7e4df" }}>
-                  <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>{k}</span>
-                  <span style={{ fontSize: 13, color: "#0a0a0a" }}>{v}</span>
+              {product.sku && (
+                <div className="flex items-baseline justify-between py-2.5" style={{ borderBottom: "1px solid #e7e4df" }}>
+                  <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>SKU</span>
+                  <span style={{ fontSize: 13, color: "#0a0a0a" }}>{product.sku}</span>
+                </div>
+              )}
+              {product.weight && (
+                <div className="flex items-baseline justify-between py-2.5" style={{ borderBottom: "1px solid #e7e4df" }}>
+                  <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>Gewicht</span>
+                  <span style={{ fontSize: 13, color: "#0a0a0a" }}>{product.weight} g</span>
+                </div>
+              )}
+              {product.dimensions.length && (
+                <div className="flex items-baseline justify-between py-2.5" style={{ borderBottom: "1px solid #e7e4df" }}>
+                  <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>Masse</span>
+                  <span style={{ fontSize: 13, color: "#0a0a0a" }}>
+                    {product.dimensions.length} × {product.dimensions.width} × {product.dimensions.height} cm
+                  </span>
+                </div>
+              )}
+              {product.attributes.map((attr) => (
+                <div key={attr.id} className="flex items-baseline justify-between py-2.5" style={{ borderBottom: "1px solid #e7e4df" }}>
+                  <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>{attr.name}</span>
+                  <span style={{ fontSize: 13, color: "#0a0a0a", textAlign: "right", maxWidth: "60%" }}>{attr.options.join(", ")}</span>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-6 p-4" style={{ border: "1px solid #0a0a0a", background: "#fafafa" }}>
-              <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>Bundle-Empfehlung</div>
-              <div style={{ fontSize: 14, color: "#0a0a0a", marginTop: 6, lineHeight: 1.4 }}>
-                + Seedplate Steel<br />
-                <span style={{ color: "#373939" }}>Stainless seed backup</span>
-              </div>
-              <div className="mt-3 flex items-baseline gap-2">
-                <span className="font-semibold tabular-nums" style={{ fontSize: 16 }}>+ CHF 79.00</span>
-                <span className="font-mono" style={{ fontSize: 10, color: "#373939", textDecoration: "line-through" }}>CHF 89.00</span>
-              </div>
-              <button className="mt-3 w-full h-10" style={{ background: "transparent", border: "1px solid #0a0a0a", fontSize: 13, color: "#0a0a0a" }}>
-                Zum Bundle hinzufügen
-              </button>
             </div>
           </div>
         </aside>

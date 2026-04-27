@@ -3,18 +3,8 @@ import PriceBlock from "@/components/ui/PriceBlock";
 import HouseBadge from "@/components/ui/HouseBadge";
 import LimitedCounter from "@/components/ui/LimitedCounter";
 import Link from "next/link";
-
-const PRODUCTS = [
-  { n: "Coldcard Mk4", c: "Hardware Wallet", p: 178, tags: ["Open Source", "Air-gapped"], stock: "Lager" as const },
-  { n: "BitBox02 Bitcoin-only", c: "Hardware Wallet", p: 139, tags: ["Open Source", "Swiss Made"], stock: "Lager" as const },
-  { n: "Trezor Safe 5", c: "Hardware Wallet", p: 219, tags: ["Open Source", "Touchscreen"], stock: "Lager" as const },
-  { n: "Jade Plus", c: "Hardware Wallet", p: 149, tags: ["Open Source"], stock: "Lager" as const },
-  { n: "Bitaxe Gamma 601", c: "Solo-Miner", p: 289, tags: ["DIY", "Open Source"], stock: "Lager" as const },
-  { n: "Seedplate Steel", c: "Seed-Backup", p: 89, tags: ["Stainless"], stock: "Lager" as const, house: true },
-  { n: "Seedplate 21 · Edition", c: "Seed-Backup", p: 420, tags: ["Titanium", "Limitiert"], stock: "limited" as const, left: 7, total: 21, house: true },
-  { n: "Passport Batch 2", c: "Hardware Wallet", p: 299, tags: ["Open Source", "Air-gapped"], stock: "Lager" as const },
-  { n: "Blockstream Jade", c: "Hardware Wallet", p: 69, tags: ["Open Source"], stock: "2-3 Wochen" as const },
-];
+import Image from "next/image";
+import { getProducts, getCategories, parsePrice } from "@/lib/woocommerce";
 
 function ImagePlaceholder({ label, ratio = "1/1", dark = false }: { label: string; ratio?: string; dark?: boolean }) {
   const bg = dark ? "#0a0a0a" : "#f4f2ee";
@@ -61,24 +51,21 @@ function FilterGroup({ title, children }: { title: string; children: React.React
 
 export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
   const { locale } = await props.params;
+  const [products, categories] = await Promise.all([getProducts({ per_page: 24 }), getCategories()]);
 
   return (
     <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
       {/* Breadcrumb + title */}
       <section className="max-w-[1280px] mx-auto px-8 pt-10 pb-8">
         <div className="font-mono uppercase mb-6" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>
-          Shop <span className="mx-2">/</span> Hardware Wallets
+          Shop
         </div>
         <div className="flex items-end justify-between">
           <h1 className="tracking-tight" style={{ fontSize: "clamp(36px,5vw,56px)", letterSpacing: "-0.025em", fontWeight: 500, lineHeight: 1 }}>
-            Hardware Wallets.
+            Alle Produkte.
           </h1>
-          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>{PRODUCTS.length} Produkte</div>
+          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>{products.length} Produkte</div>
         </div>
-        <p className="mt-5 max-w-[620px]" style={{ fontSize: 15, color: "#373939", lineHeight: 1.6 }}>
-          Wir führen nur Hardware Wallets, deren Firmware wir selbst geprüft haben.
-          Alle Geräte sind Open-Source oder teil-offen und werden mit versiegelter Verpackung versandt.
-        </p>
       </section>
 
       {/* Body */}
@@ -94,11 +81,9 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
             </div>
 
             <FilterGroup title="Kategorie">
-              <CB label="Hardware Wallets" n={24} checked />
-              <CB label="Mining" n={11} />
-              <CB label="Bücher" n={38} />
-              <CB label="Accessoires" n={19} />
-              <CB label="Seed-Backup" n={8} />
+              {categories.slice(0, 8).map((cat) => (
+                <CB key={cat.id} label={cat.name} n={cat.count} />
+              ))}
             </FilterGroup>
 
             <FilterGroup title="Preis">
@@ -175,36 +160,57 @@ export default async function ShopPage(props: PageProps<"/[locale]/shop">) {
 
           {/* Product cards */}
           <div className="grid grid-cols-3 gap-x-6 gap-y-12 pt-8">
-            {PRODUCTS.map((p) => (
-              <Link key={p.n} href={`/${locale}/shop/${p.n.toLowerCase().replace(/[^a-z0-9]+/g, "-")}`}>
-                <div className="relative">
-                  <ImagePlaceholder label={p.n} ratio="1/1" />
-                  {p.house && <div className="absolute top-3 left-3"><HouseBadge /></div>}
-                  {p.stock === "limited" && (
-                    <div className="absolute top-3 right-3">
-                      <Pill variant="solid">Limited · {p.left}/{p.total}</Pill>
+            {products.map((p) => {
+              const price = parsePrice(p.price);
+              const img = p.images[0];
+              const isLimited = p.manage_stock && p.stock_quantity !== null && p.stock_quantity <= 21;
+              const tags = p.attributes.flatMap((a) => a.options).slice(0, 3);
+              return (
+                <Link key={p.id} href={`/${locale}/shop/${p.slug}`}>
+                  <div className="relative">
+                    {img ? (
+                      <div className="relative w-full" style={{ aspectRatio: "1/1", background: "#f4f2ee" }}>
+                        <Image
+                          src={img.src}
+                          alt={img.alt || p.name}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 1280px) 25vw, 300px"
+                        />
+                      </div>
+                    ) : (
+                      <ImagePlaceholder label={p.name} ratio="1/1" />
+                    )}
+                    {isLimited && p.stock_quantity !== null && (
+                      <div className="absolute top-3 right-3">
+                        <Pill variant="solid">Limited · {p.stock_quantity}</Pill>
+                      </div>
+                    )}
+                  </div>
+                  <div className="mt-4 flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>
+                        {p.categories[0]?.name ?? ""}
+                      </div>
+                      <div style={{ fontSize: 15, color: "#0a0a0a", marginTop: 4, fontWeight: 500 }}>{p.name}</div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 font-mono uppercase shrink-0" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939", marginTop: 2, borderBottom: "1px solid #f39320" }}>
+                      <span style={{ color: "#f39320", fontWeight: 700 }}>BTC</span>
+                      <span>−10%</span>
+                    </span>
+                  </div>
+                  <div className="mt-3"><PriceBlock chf={price} size="sm" /></div>
+                  {tags.length > 0 && (
+                    <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                      {tags.map((tg) => <Pill key={tg}>{tg}</Pill>)}
                     </div>
                   )}
-                </div>
-                <div className="mt-4 flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>{p.c}</div>
-                    <div style={{ fontSize: 15, color: "#0a0a0a", marginTop: 4, fontWeight: 500 }}>{p.n}</div>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 font-mono uppercase shrink-0" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939", marginTop: 2, borderBottom: "1px solid #f39320" }}>
-                    <span style={{ color: "#f39320", fontWeight: 700 }}>BTC</span>
-                    <span>−10%</span>
-                  </span>
-                </div>
-                <div className="mt-3"><PriceBlock chf={p.p} size="sm" /></div>
-                <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-                  {p.tags.map((tg) => <Pill key={tg}>{tg}</Pill>)}
-                </div>
-                {p.stock === "limited" && (
-                  <div className="mt-3"><LimitedCounter left={p.left} total={p.total} /></div>
-                )}
-              </Link>
-            ))}
+                  {isLimited && p.stock_quantity !== null && (
+                    <div className="mt-3"><LimitedCounter left={p.stock_quantity} total={21} /></div>
+                  )}
+                </Link>
+              );
+            })}
           </div>
 
           {/* Pagination */}
