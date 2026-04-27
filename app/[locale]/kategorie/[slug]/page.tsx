@@ -1,14 +1,135 @@
+import Link from "next/link";
+import Image from "next/image";
+import { notFound } from "next/navigation";
+import { getCategoryBySlug, getProducts, getCategories, parsePrice } from "@/lib/woocommerce";
+import Pill from "@/components/ui/Pill";
+import PriceBlock from "@/components/ui/PriceBlock";
+import LimitedCounter from "@/components/ui/LimitedCounter";
+
 export default async function KategoriePage(
   props: PageProps<"/[locale]/kategorie/[slug]">
 ) {
-  const { slug } = await props.params;
+  const { locale, slug } = await props.params;
+
+  const [category, allCategories] = await Promise.all([
+    getCategoryBySlug(slug),
+    getCategories(),
+  ]);
+
+  if (!category) notFound();
+
+  const products = await getProducts({
+    category: String(category.id),
+    per_page: 24,
+  });
+
+  const siblingCategories = allCategories.filter((c) => c.id !== category.id);
+
   return (
-    <main className="max-w-6xl mx-auto px-8 py-12">
-      <h1 className="text-3xl font-semibold tracking-tight mb-2 capitalize">
-        {slug.replace(/-/g, " ")}
-      </h1>
-      <p className="text-zinc-500 text-sm mb-8">Alle Produkte in dieser Kategorie.</p>
-      <p className="text-zinc-400 text-sm">Produkte werden hier erscheinen.</p>
-    </main>
+    <div style={{ background: "#fafafa", color: "#0a0a0a" }}>
+      {/* Breadcrumb + title */}
+      <section className="max-w-[1280px] mx-auto px-8 pt-10 pb-8">
+        <div className="font-mono uppercase mb-6" style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}>
+          <Link href={`/${locale}/shop`}>Shop</Link>
+          <span className="mx-2">/</span>
+          <span style={{ color: "#0a0a0a" }}>{category.name}</span>
+        </div>
+        <div className="flex items-end justify-between">
+          <h1 className="tracking-tight" style={{ fontSize: "clamp(36px,5vw,56px)", letterSpacing: "-0.025em", fontWeight: 500, lineHeight: 1 }}>
+            {category.name}.
+          </h1>
+          <div className="font-mono" style={{ fontSize: 12, color: "#373939" }}>{products.length} Produkte</div>
+        </div>
+        {category.description && (
+          <p className="mt-4 max-w-xl" style={{ fontSize: 15, color: "#373939", lineHeight: 1.6 }}
+            dangerouslySetInnerHTML={{ __html: category.description }}
+          />
+        )}
+
+        {/* Other categories */}
+        {siblingCategories.length > 0 && (
+          <div className="mt-6 flex items-center gap-2 flex-wrap">
+            <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
+              Alle
+            </Link>
+            {siblingCategories.slice(0, 8).map((cat) => (
+              <Link key={cat.id} href={`/${locale}/kategorie/${cat.slug}`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", background: "#0a0a0a", color: "#fafafa" }}>
+                {cat.name}
+              </Link>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {/* Product grid */}
+      <section className="max-w-[1280px] mx-auto px-8 pb-24">
+        <div style={{ borderTop: "1px solid #0a0a0a", paddingTop: 32 }}>
+          {products.length === 0 ? (
+            <p className="py-20 text-center font-mono" style={{ fontSize: 13, color: "#373939" }}>
+              Keine Produkte in dieser Kategorie.
+            </p>
+          ) : (
+            <div className="grid grid-cols-3 gap-x-6 gap-y-12">
+              {products.map((p) => {
+                const price = parsePrice(p.price);
+                const img = p.images[0];
+                const isLimited = p.manage_stock && p.stock_quantity !== null && p.stock_quantity <= 21;
+                const tags = p.attributes.flatMap((a) => a.options).slice(0, 3);
+
+                return (
+                  <Link key={p.id} href={`/${locale}/shop/${p.slug}`}>
+                    <div className="relative">
+                      {img ? (
+                        <div className="relative w-full" style={{ aspectRatio: "1/1", background: "#f4f2ee" }}>
+                          <Image
+                            src={img.src}
+                            alt={img.alt || p.name}
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 1280px) 33vw, 400px"
+                          />
+                        </div>
+                      ) : (
+                        <div className="relative overflow-hidden w-full" style={{ aspectRatio: "1/1", background: "repeating-linear-gradient(135deg, #f4f2ee 0 14px, #ece8e1 14px 15px)" }}>
+                          <div className="absolute inset-0 flex items-end justify-start p-3">
+                            <span className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.12em", color: "#9c9689" }}>{p.name}</span>
+                          </div>
+                        </div>
+                      )}
+                      {isLimited && p.stock_quantity !== null && (
+                        <div className="absolute top-3 right-3">
+                          <Pill variant="solid">Limited · {p.stock_quantity}</Pill>
+                        </div>
+                      )}
+                    </div>
+                    <div className="mt-4 flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="font-mono uppercase" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939" }}>
+                          {category.name}
+                        </div>
+                        <div style={{ fontSize: 15, color: "#0a0a0a", marginTop: 4, fontWeight: 500 }}>{p.name}</div>
+                      </div>
+                      <span className="inline-flex items-center gap-1.5 font-mono uppercase shrink-0" style={{ fontSize: 10, letterSpacing: "0.14em", color: "#373939", marginTop: 2, borderBottom: "1px solid #f39320" }}>
+                        <span style={{ color: "#f39320", fontWeight: 700 }}>BTC</span>
+                        <span>−10%</span>
+                      </span>
+                    </div>
+                    <div className="mt-3"><PriceBlock chf={price} size="sm" /></div>
+                    {tags.length > 0 && (
+                      <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+                        {tags.map((tg) => <Pill key={tg}>{tg}</Pill>)}
+                      </div>
+                    )}
+                    {isLimited && p.stock_quantity !== null && (
+                      <div className="mt-3"><LimitedCounter left={p.stock_quantity} total={21} /></div>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }
