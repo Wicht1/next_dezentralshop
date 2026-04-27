@@ -37,6 +37,8 @@ export type StatusEntry = {
 type StatusCopy = Awaited<ReturnType<typeof getDictionary>>["status"];
 
 const ZURICH_TIME_ZONE = "Europe/Zurich";
+const HALVING_INTERVAL_BLOCKS = 210_000;
+const AVERAGE_BLOCKS_PER_DAY = 144;
 const BITCOIN_STATUS_URL = "https://status.dezentralshop.ch/api/bitcoin.json";
 const LIGHTNING_STATUS_URL = "https://status.dezentralshop.ch/api/lightning.json";
 const DEFAULT_ICS_URL =
@@ -72,6 +74,10 @@ function formatMinutes(seconds: number, locale: Locale) {
   const minutes = seconds / 60;
   const value = minutes < 10 ? Math.round(minutes * 10) / 10 : Math.round(minutes);
   return `${formatNumber(value, locale, { maximumFractionDigits: minutes < 10 ? 1 : 0 })} min`;
+}
+
+function formatBlockHeight(height: number, locale: Locale) {
+  return formatNumber(height, locale).replace(/\u202f/g, "'");
 }
 
 async function fetchJson<T>(url: string, revalidate: number, init?: RequestInit): Promise<T> {
@@ -145,7 +151,7 @@ async function getBitcoinNetwork(locale: Locale, copy: StatusCopy): Promise<Stat
       state,
       stateLabel: stateLabel(copy, state),
       rows: [
-        { label: copy.labels.blockHeight, value: formatNumber(height, locale) },
+        { label: copy.labels.blockHeight, value: formatBlockHeight(height, locale) },
         { label: copy.labels.sinceLastBlock, value: formatMinutes(seconds, locale) },
       ],
     };
@@ -160,6 +166,55 @@ async function getBitcoinNetwork(locale: Locale, copy: StatusCopy): Promise<Stat
       ],
       note: `${copy.messages.sourceUnavailable} (${errorMessage(error)})`,
     };
+  }
+}
+
+export async function getBitcoinNetworkSummary(localeInput: string): Promise<{
+  height: number;
+  heightLabel: string;
+  sinceLastBlockLabel: string;
+  halving: {
+    nextHeight: number;
+    remainingBlocks: number;
+    remainingBlocksLabel: string;
+    remainingDays: number;
+    progressPercent: number;
+  };
+} | null> {
+  const locale = normalizeLocale(localeInput);
+
+  try {
+    const data = await fetchJson<Record<string, unknown>>(BITCOIN_STATUS_URL, 30);
+    const height = typeof data.height === "number" ? data.height : Number(data.height);
+    const seconds =
+      typeof data.seconds_since_block === "number"
+        ? data.seconds_since_block
+        : Number(data.seconds_since_block);
+
+    if (data.ok !== true || !Number.isFinite(height) || height <= 0 || !Number.isFinite(seconds) || seconds < 0) {
+      return null;
+    }
+
+    const currentEpochStart = Math.floor(height / HALVING_INTERVAL_BLOCKS) * HALVING_INTERVAL_BLOCKS;
+    const nextHeight = currentEpochStart + HALVING_INTERVAL_BLOCKS;
+    const remainingBlocks = Math.max(0, nextHeight - height);
+    const elapsedBlocks = Math.min(HALVING_INTERVAL_BLOCKS, Math.max(0, height - currentEpochStart));
+    const progressPercent = (elapsedBlocks / HALVING_INTERVAL_BLOCKS) * 100;
+
+    return {
+      height,
+      heightLabel: formatBlockHeight(height, locale),
+      sinceLastBlockLabel: formatMinutes(seconds, locale),
+      halving: {
+        nextHeight,
+        remainingBlocks,
+        remainingBlocksLabel: formatBlockHeight(remainingBlocks, locale),
+        remainingDays: Math.ceil(remainingBlocks / AVERAGE_BLOCKS_PER_DAY),
+        progressPercent,
+      },
+    };
+  } catch {
+    return null;
   }
 }
 
@@ -229,6 +284,44 @@ async function getBitcoinPrice(locale: Locale, copy: StatusCopy): Promise<Status
       rows: [{ label: "BTC/CHF", value: copy.emptyValue }],
       note: `${copy.messages.rateUnavailable} (${errorMessage(error)})`,
     };
+  }
+}
+
+export async function getBitcoinPriceSummary(localeInput: string): Promise<{
+  chfLabel: string;
+} | null> {
+  const locale = normalizeLocale(localeInput);
+  const btcpayUrl = process.env.BTCPAY_URL?.replace(/\/+$/, "");
+  const apiKey = process.env.BTCPAY_API_KEY;
+  const storeId = process.env.BTCPAY_STORE_ID;
+
+  if (!btcpayUrl || !apiKey || !storeId) {
+    return null;
+  }
+
+  try {
+    const url = `${btcpayUrl}/api/v1/stores/${encodeURIComponent(storeId)}/rates?currencyPair=BTC_CHF`;
+    const data = await fetchJson<unknown>(url, 600, {
+      headers: { Authorization: `Token ${apiKey}` },
+    });
+    const firstRate = Array.isArray(data) ? data[0] : null;
+    const rawRate =
+      firstRate && typeof firstRate === "object" && "rate" in firstRate
+        ? (firstRate as { rate?: unknown }).rate
+        : null;
+    const rate = typeof rawRate === "number" ? rawRate : Number(rawRate);
+
+    if (!Number.isFinite(rate) || rate <= 0) {
+      return null;
+    }
+
+    return {
+      chfLabel: formatNumber(rate, locale, {
+        maximumFractionDigits: 0,
+      }).replace(/\u202f/g, "'"),
+    };
+  } catch {
+    return null;
   }
 }
 

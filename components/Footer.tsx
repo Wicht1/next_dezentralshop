@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { getBitcoinNetworkSummary } from "@/lib/status";
+import LimitedCounter from "@/components/ui/LimitedCounter";
 
 const COLS = [
   {
@@ -26,7 +28,9 @@ const COLS = [
   },
 ];
 
-export default function Footer({ locale }: { locale: string }) {
+export default async function Footer({ locale }: { locale: string }) {
+  const bitcoinNetwork = await getBitcoinNetworkSummary(locale);
+
   return (
     <div style={{ borderTop: "1px solid #e7e4df", background: "#fafafa" }} className="mt-24">
       <div className="max-w-[1280px] mx-auto px-8 py-16 grid grid-cols-12 gap-8">
@@ -67,8 +71,25 @@ export default function Footer({ locale }: { locale: string }) {
             className="mt-6 font-mono uppercase"
             style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}
           >
-            Block · 889&rsquo;412&nbsp;&nbsp;·&nbsp;&nbsp;Halving − 412 Tage
+            Block · {bitcoinNetwork?.heightLabel ?? "-"}&nbsp;&nbsp;·&nbsp;&nbsp;letzter Block ·{" "}
+            {bitcoinNetwork?.sinceLastBlockLabel ?? "-"}
           </div>
+          <div
+            className="mt-2 font-mono uppercase"
+            style={{ fontSize: 10, letterSpacing: "0.18em", color: "#373939" }}
+          >
+            Halving - {bitcoinNetwork?.halving.remainingDays ?? "-"} Tage
+          </div>
+          {bitcoinNetwork?.halving && (
+            <div className="mt-3">
+              <LimitedCounter
+                left={bitcoinNetwork.halving.remainingBlocks}
+                total={210000}
+                progressPercent={bitcoinNetwork.halving.progressPercent}
+                label={`noch ${bitcoinNetwork.halving.remainingBlocksLabel}/210'000`}
+              />
+            </div>
+          )}
           <div className="mt-4 flex items-center gap-4">
             <a
               href="https://github.com/Wicht1/next_dezentralshop"

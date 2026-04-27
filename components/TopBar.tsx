@@ -1,7 +1,13 @@
 import Link from "next/link";
+import { getBitcoinNetworkSummary, getBitcoinPriceSummary } from "@/lib/status";
 import NavItems from "./NavItems";
 
-export default function TopBar({ locale }: { locale: string }) {
+export default async function TopBar({ locale }: { locale: string }) {
+  const [bitcoinNetwork, bitcoinPrice] = await Promise.all([
+    getBitcoinNetworkSummary(locale),
+    getBitcoinPriceSummary(locale),
+  ]);
+
   return (
     <div
       className="sticky top-0 z-20"
@@ -19,9 +25,9 @@ export default function TopBar({ locale }: { locale: string }) {
           </span>
           <span className="opacity-70">
             1 BTC ={" "}
-            <span style={{ color: "#f39320" }}>CHF 98&rsquo;042</span>
+            <span style={{ color: "#f39320" }}>CHF {bitcoinPrice?.chfLabel ?? "-"}</span>
             <span className="mx-2 opacity-40">·</span>
-            BLOCK 889&rsquo;412
+            BLOCK {bitcoinNetwork?.heightLabel ?? "-"}
           </span>
         </div>
       </div>
