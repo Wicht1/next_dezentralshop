@@ -43,12 +43,14 @@ export default async function KategoriePage(
       )
     : allProducts;
 
-  // Build full category nav: all top-level cats, each with their children
+  // Row 1: all top-level categories
   const topLevelCats = allCategories.filter((c) => c.parent === 0);
-  const categoryGroups = topLevelCats.map((parent) => ({
-    parent,
-    children: allCategories.filter((c) => c.parent === parent.id),
-  }));
+
+  // Which top-level cat is "active" (current or its parent)
+  const activeParentId = category.parent === 0 ? category.id : category.parent;
+
+  // Row 2: sub-categories of the active parent + fil_ filters
+  const subCats = allCategories.filter((c) => c.parent === activeParentId);
 
   // Only fil_ attributes as filters, strip prefix for display
   const filterMap = new Map<string, string[]>();
@@ -85,65 +87,64 @@ export default async function KategoriePage(
           />
         )}
 
-        {/* Row 1: All categories, always static, parent→children connected */}
-        <div className="mt-6 flex items-center gap-3 flex-wrap">
+        {/* Row 1: Top-level categories — always static */}
+        <div className="mt-6 flex items-center gap-2 flex-wrap">
           <Link href={`/${locale}/shop`} className="font-mono uppercase px-3 py-1.5" style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}>
             Alle
           </Link>
-          {categoryGroups.map(({ parent, children }) => {
-            const parentActive = category.id === parent.id;
+          {topLevelCats.map((cat) => {
+            const isActive = cat.id === activeParentId;
             return (
-              <div key={parent.id} className="flex items-center">
-                <Link
-                  href={`/${locale}/kategorie/${parent.slug}`}
-                  className="font-mono uppercase px-3 py-1.5"
-                  style={{
-                    fontSize: 10,
-                    letterSpacing: "0.14em",
-                    background: parentActive ? "transparent" : "#0a0a0a",
-                    color: parentActive ? "#f39320" : "#fafafa",
-                    border: parentActive ? "1px solid #f39320" : "1px solid #0a0a0a",
-                  }}
-                >
-                  {parent.name}
-                </Link>
-                {children.map((child) => {
-                  const childActive = category.id === child.id;
-                  return (
-                    <div key={child.id} className="flex items-center">
-                      {/* connector */}
-                      <div style={{ width: 10, height: 1, background: "#e7e4df", flexShrink: 0 }} />
-                      <Link
-                        href={`/${locale}/kategorie/${child.slug}`}
-                        className="font-mono uppercase px-3 py-1.5"
-                        style={{
-                          fontSize: 10,
-                          letterSpacing: "0.14em",
-                          background: childActive ? "transparent" : "#0a0a0a",
-                          color: childActive ? "#f39320" : "#fafafa",
-                          border: childActive ? "1px solid #f39320" : "1px solid #0a0a0a",
-                        }}
-                      >
-                        {child.name}
-                      </Link>
-                    </div>
-                  );
-                })}
-              </div>
+              <Link
+                key={cat.id}
+                href={`/${locale}/kategorie/${cat.slug}`}
+                className="font-mono uppercase px-3 py-1.5"
+                style={{
+                  fontSize: 10,
+                  letterSpacing: "0.14em",
+                  background: isActive ? "transparent" : "#0a0a0a",
+                  color: isActive ? "#f39320" : "#fafafa",
+                  border: isActive ? "1px solid #f39320" : "1px solid #0a0a0a",
+                }}
+              >
+                {cat.name}
+              </Link>
             );
           })}
         </div>
 
-        {/* Row 2: fil_ attribute filters */}
-        {filterMap.size > 0 && (
+        {/* Row 2: Sub-categories (black) + fil_ filters (light) */}
+        {(subCats.length > 0 || filterMap.size > 0) && (
           <div className="mt-3 flex items-center gap-2 flex-wrap">
+            {subCats.map((sub) => {
+              const isActive = category.id === sub.id;
+              return (
+                <Link
+                  key={sub.id}
+                  href={`/${locale}/kategorie/${sub.slug}`}
+                  className="font-mono uppercase px-3 py-1.5"
+                  style={{
+                    fontSize: 10,
+                    letterSpacing: "0.14em",
+                    background: isActive ? "transparent" : "#0a0a0a",
+                    color: isActive ? "#f39320" : "#fafafa",
+                    border: isActive ? "1px solid #f39320" : "1px solid #0a0a0a",
+                  }}
+                >
+                  {sub.name}
+                </Link>
+              );
+            })}
+            {subCats.length > 0 && filterMap.size > 0 && (
+              <div style={{ width: 1, height: 16, background: "#e7e4df", margin: "0 4px", flexShrink: 0 }} />
+            )}
             {activeFilter && (
               <Link
                 href={baseUrl}
                 className="font-mono uppercase px-3 py-1.5"
                 style={{ fontSize: 10, letterSpacing: "0.14em", border: "1px solid #e7e4df", color: "#373939" }}
               >
-                Alle
+                ×
               </Link>
             )}
             {Array.from(filterMap.entries()).flatMap(([, options]) =>
